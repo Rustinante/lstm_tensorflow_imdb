@@ -144,6 +144,7 @@ class PTBModel(object):
         session.run(tf.assign(self.lr, lr_value))
 
     def create_variables(self, embedded_inputs):
+        print("creating variables")
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
         with tf.device('/gpu:%d' %GPU_ID):
@@ -177,7 +178,6 @@ class PTBModel(object):
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                         initializer=tf.constant_initializer(0, tf.float32))
                 for time_step in range(num_steps):
-                    print("time_step = %d\n" %time_step)
                     if time_step > 0: tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = self.cell(inputs[time_step, :, :], state)
                     outputs.append(cell_output)
@@ -190,7 +190,6 @@ class PTBModel(object):
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                         initializer=tf.constant_initializer(0, tf.float32))
                 for time_step in range(num_steps):
-                    print("time_step = %d\n" % time_step)
                     if time_step > 0: tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = self.cell(inputs[time_step, :, :], state)
                     outputs.append(cell_output)
@@ -201,22 +200,24 @@ class PTBModel(object):
 
         # mean pooling
         # accumulate along each sentence
+        print("mean pooling starts\n")
         segment_IDs = np.arange(batch_size).repeat(num_steps)
         pool_sum = tf.segment_sum(output, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
         pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
-
+        print("mean pooling finished\n")
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
 
         on_value=float(1)
         off_value=float(0)
         one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
-
+        print("computing the cost \n")
         self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                                                         reduction_indices=1))
+        print("finished computing the cost")
         self._final_state = state
 
         #if not self.is_training:
@@ -230,6 +231,7 @@ class PTBModel(object):
         with tf.device('/gpu:%d' %GPU_ID):
             self._train_op = optimizer.apply_gradients(zip(grads, tvars))
 
+        print("finished creating variables")
     @property
     def input_data(self):
         return self._input_data
@@ -269,6 +271,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
+    print("total number of batches is: %d" %total_num_batches)
     with tf.device('/gpu:%d' % GPU_ID):
         x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
         labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
@@ -279,10 +282,10 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
         config.num_steps = maxlen
-        print("Creating variables %d th time!!! \n" %mini_batch_number)
+        print("Creating variables %d th time \n" %mini_batch_number)
         m.create_variables(embedded_inputs)
         print("Created variables %d th time!!! \n" % mini_batch_number)
-        print("Initializing all variables %d th time!!! \n" % mini_batch_number)
+        print("Initializing all variables %d th time \n" % mini_batch_number)
         tf.initialize_all_variables().run()
         print("Initialized all variables %d th time!!! \n" % mini_batch_number)
         cost, state, _ = session.run([m.cost, m.final_state, m.train_op],
@@ -299,9 +302,6 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
             valid_perplexity = run_epoch(session, m, validation_data, is_training=is_training)
             print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-
-
-
     return np.exp(costs / iters)
 
 def words_to_embedding(word_embedding, word_matrix):
