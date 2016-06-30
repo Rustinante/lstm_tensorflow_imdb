@@ -256,7 +256,7 @@ class PTBModel(object):
 
 
 
-def run_epoch(session, m, data, verbose=False):
+def run_epoch(session, m, data, verbose=False, validation_data=None):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
@@ -293,8 +293,8 @@ def run_epoch(session, m, data, verbose=False):
                 iters * m.batch_size / (time.time() - start_time)))
             with tf.variable_scope("model", reuse=True,
                                    initializer=tf.random_uniform_initializer(-config.init_scale, config.init_scale)):
-                mvalid = PTBModel(is_training=False)
-                valid_perplexity = run_epoch(session, mvalid, valid_data)
+                validation_model = PTBModel(is_training=False)
+                valid_perplexity = run_epoch(session, validation_model, validation_data=validation_data)
                 print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
 
 
@@ -341,7 +341,7 @@ def main(_):
             m.assign_lr(session, config.learning_rate * lr_decay)
 
             print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-            train_perplexity = run_epoch(session, m, train_data, verbose=True)
+            train_perplexity = run_epoch(session, m, train_data, verbose=True,validation_data=valid_data)
 
             print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
             valid_perplexity = run_epoch(session, mvalid, valid_data)
