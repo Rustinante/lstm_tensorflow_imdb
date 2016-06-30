@@ -144,7 +144,7 @@ class PTBModel(object):
     def create_variables(self, embedded_inputs):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
-        self._targets = tf.placeholder(tf.int32, [batch_size],name='targets')
+        self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
         with tf.device("/cpu:0"):
