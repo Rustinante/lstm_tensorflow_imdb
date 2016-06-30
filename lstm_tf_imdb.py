@@ -299,12 +299,14 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         iters += m.num_steps
 
         if verbose and mini_batch_number % 10 == 0:
+            print("VALIDATING ACCURACY")
             print("%.3f perplexity: %.3f speed: %.0f wps" %
                 (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
                 iters * m.batch_size / (time.time() - start_time)))
 
             valid_perplexity = run_epoch(session, m, validation_data, is_training=is_training)
             print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+            print("finished VALIDATING ACCURACY")
     return np.exp(costs / iters)
 
 def words_to_embedding(word_embedding, word_matrix):
