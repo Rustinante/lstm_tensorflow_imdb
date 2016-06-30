@@ -171,7 +171,7 @@ class PTBModel(object):
         state = self._initial_state
         print("in create_variables\n")
         if self.created_variables is True:
-            with tf.variable_scope("RNN",reuse=True), tf.device('/gpu:0')::
+            with tf.variable_scope("RNN",reuse=True), tf.device('/gpu:0'):
                 softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                             initializer=tf.random_normal_initializer(0, 0.1))
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
@@ -184,7 +184,7 @@ class PTBModel(object):
                     print("finished time_step = %d\n" % time_step)
         else:
             print("in the else statement")
-            with tf.variable_scope("RNN"), tf.device('/gpu:0')::
+            with tf.variable_scope("RNN"), tf.device('/gpu:0'):
                 softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                             initializer=tf.random_normal_initializer(0, 0.1))
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
