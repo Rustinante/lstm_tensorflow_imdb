@@ -181,7 +181,7 @@ class PTBModel(object):
                     if time_step > 0: tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = self.cell(inputs[time_step, :, :], state)
                     outputs.append(cell_output)
-                    print("finished time_step = %d\n" % time_step)
+                    print("finished time_step = %d" % time_step)
         else:
             print("in the else statement")
             with tf.variable_scope("RNN"):#, tf.device('/gpu:%d' %GPU_ID):
@@ -193,7 +193,7 @@ class PTBModel(object):
                     if time_step > 0: tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = self.cell(inputs[time_step, :, :], state)
                     outputs.append(cell_output)
-                    print("finished time_step = %d\n" % time_step)
+                    print("finished time_step = %d" % time_step)
             self.created_variables=True
         #with tf.device('/gpu:%d' % GPU_ID):***
         output = tf.reshape(tf.concat(1, outputs), [-1, dim_proj])
