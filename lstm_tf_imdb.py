@@ -291,6 +291,11 @@ def run_epoch(session, m, data, verbose=False):
             print("%.3f perplexity: %.3f speed: %.0f wps" %
                 (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
                 iters * m.batch_size / (time.time() - start_time)))
+            with tf.variable_scope("model", reuse=True, initializer=initializer):
+                mvalid = PTBModel(is_training=False)
+                valid_perplexity = run_epoch(session, mvalid, valid_data)
+                print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+
 
 
     return np.exp(costs / iters)
