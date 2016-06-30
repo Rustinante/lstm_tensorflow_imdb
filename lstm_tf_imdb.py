@@ -208,7 +208,7 @@ class PTBModel(object):
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
 
-        one_hot_targets = tf.one_hot(self._targets, 2, on_value=1., off_value=0., dtype='float32')
+        one_hot_targets = tf.one_hot(self._targets, 2, on_value=1., off_value=0.)
 
         self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                                                         reduction_indices=1))
