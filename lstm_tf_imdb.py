@@ -298,7 +298,7 @@ def words_to_embedding(word_embedding, word_matrix):
     dim0 = word_matrix.shape[0]
     dim1 = word_matrix.shape[1]
     unrolled_matrix = tf.reshape(word_matrix,[-1])
-    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, axis=1,name="one_hot_word_embedding")
+    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=1.0, off_value=0.0, axis=1)
     embedded_words = tf.matmul(one_hot, word_embedding)
     embedded_words = tf.reshape(embedded_words, [dim0, dim1, dim_proj])
     return embedded_words
