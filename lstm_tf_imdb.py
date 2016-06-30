@@ -76,7 +76,7 @@ FLAGS = flags.FLAGS
 GPU_ID=1
 dim_proj=128
 vocabulary_size = 10000
-BATCH_SIZE=32
+BATCH_SIZE=16
 
 class Options(object):
     m_proj = 128
@@ -299,7 +299,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             costs += cost
             iters += m.num_steps
 
-            if verbose and mini_batch_number % 10 == 0:
+            if verbose and mini_batch_number % 10 == 0 and counter is not 1:
                 print("VALIDATING ACCURACY")
                 print("%.3f perplexity: %.3f speed: %.0f wps" %
                     (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
@@ -315,7 +315,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                                           m._mask: mask})
             costs += cost
             iters += m.num_steps
-            
+
     return np.exp(costs / iters)
 
 def words_to_embedding(word_embedding, word_matrix):
