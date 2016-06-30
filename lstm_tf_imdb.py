@@ -107,7 +107,7 @@ class Options(object):
     num_steps = 35
     hidden_size = 128
     max_max_epoch = 1
-    keep_prob = 0.5
+    keep_prob = 1
     lr_decay = 1
     batch_size = BATCH_SIZE
 
