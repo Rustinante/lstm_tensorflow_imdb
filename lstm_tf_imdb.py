@@ -198,15 +198,14 @@ class PTBModel(object):
             self.created_variables=True
         with tf.device('/gpu:%d' % GPU_ID):
             output = tf.reshape(tf.concat(1, outputs), [-1, dim_proj])
+            # mean pooling
+            # accumulate along each sentence
+            segment_IDs = np.arange(batch_size).repeat(num_steps)
+            pool_sum = tf.segment_sum(output, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
 
-        # mean pooling
-        # accumulate along each sentence
-        segment_IDs = np.arange(batch_size).repeat(num_steps)
-        pool_sum = tf.segment_sum(output, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
-
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
+            num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+            tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+            pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
 
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
