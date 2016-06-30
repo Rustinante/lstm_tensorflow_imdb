@@ -51,7 +51,7 @@ def prepare_data(seqs, labels, maxlen=None):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
 
-    return x, x_mask, labels
+    return x, x_mask, labels, maxlen
 
 
 def get_dataset_file(dataset, default_dataset, origin):
