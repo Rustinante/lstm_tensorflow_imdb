@@ -288,10 +288,10 @@ def run_epoch(session, m, data, verbose=False):
         iters += m.num_steps
 
         if verbose and mini_batch_number % 10 == 0:
-            #print("%.3f perplexity: %.3f speed: %.0f wps" %
-            #    (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
-            #    iters * m.batch_size / (time.time() - start_time)))
-            
+            print("%.3f perplexity: %.3f speed: %.0f wps" %
+                (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
+                iters * m.batch_size / (time.time() - start_time)))
+
 
     return np.exp(costs / iters)
 
