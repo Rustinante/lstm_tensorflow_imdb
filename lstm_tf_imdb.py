@@ -147,8 +147,8 @@ class PTBModel(object):
         self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
-        with tf.device("/cpu:0"):
-            inputs = embedded_inputs
+        #with tf.device("/cpu:0"):
+        inputs = embedded_inputs
 
         # if is_training and config.keep_prob < 1:
         # inputs = tf.nn.dropout(inputs, config.keep_prob)
