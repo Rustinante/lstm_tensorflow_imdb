@@ -276,8 +276,12 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
         labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
 
+    counter=0
     #with tf.device('/gpu:%d' %GPU_ID):
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
+        counter+=1
+        if counter == 20:
+            break;
         print("m.created_variables %r" %m.created_variables)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
