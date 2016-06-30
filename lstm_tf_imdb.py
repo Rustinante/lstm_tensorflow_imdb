@@ -291,22 +291,31 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print("Initializing all variables %d th time " % mini_batch_number)
         tf.initialize_all_variables().run()
         print("Initialized all variables %d th time!!! " % mini_batch_number)
-        cost, state, _ = session.run([m.cost, m.final_state, m.train_op],
-                                 {m.targets: labels_mini,
-                                  m.initial_state: state,
-                                  m._mask: mask})
-        costs += cost
-        iters += m.num_steps
+        if is_training is True:
+            cost, state, _ = session.run([m.cost, m.final_state, m.train_op],
+                                     {m.targets: labels_mini,
+                                      m.initial_state: state,
+                                      m._mask: mask})
+            costs += cost
+            iters += m.num_steps
 
-        if verbose and mini_batch_number % 10 == 0:
-            print("VALIDATING ACCURACY")
-            print("%.3f perplexity: %.3f speed: %.0f wps" %
-                (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
-                iters * m.batch_size / (time.time() - start_time)))
+            if verbose and mini_batch_number % 10 == 0:
+                print("VALIDATING ACCURACY")
+                print("%.3f perplexity: %.3f speed: %.0f wps" %
+                    (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
+                    iters * m.batch_size / (time.time() - start_time)))
 
-            valid_perplexity = run_epoch(session, m, validation_data, is_training=is_training)
-            print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-            print("finished VALIDATING ACCURACY")
+                valid_perplexity = run_epoch(session, m, validation_data, is_training=False)
+                print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+                print("finished VALIDATING ACCURACY")
+        else:
+            cost, state = session.run([m.cost, m.final_state],
+                                         {m.targets: labels_mini,
+                                          m.initial_state: state,
+                                          m._mask: mask})
+            costs += cost
+            iters += m.num_steps
+            
     return np.exp(costs / iters)
 
 def words_to_embedding(word_embedding, word_matrix):
