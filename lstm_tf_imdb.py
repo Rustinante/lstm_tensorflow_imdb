@@ -106,7 +106,7 @@ class Options(object):
     num_layers = 2
     num_steps = 35
     hidden_size = 128
-    max_max_epoch = 39
+    max_max_epoch = 1
     keep_prob = 0.5
     lr_decay = 1
     batch_size = 16
@@ -269,8 +269,6 @@ def run_epoch(session, m, data, verbose=False):
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
 
-    epoch_size = total_num_batches
-
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         print("m.created_variables %r" %m.created_variables)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
@@ -289,10 +287,11 @@ def run_epoch(session, m, data, verbose=False):
         costs += cost
         iters += m.num_steps
 
-        if verbose and mini_batch_number % (epoch_size // 10) == 10:
-            print("%.3f perplexity: %.3f speed: %.0f wps" %
-                (mini_batch_number * 1.0 / epoch_size, np.exp(costs / iters),
-                iters * m.batch_size / (time.time() - start_time)))
+        if verbose and mini_batch_number % 10 == 0:
+            #print("%.3f perplexity: %.3f speed: %.0f wps" %
+            #    (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
+            #    iters * m.batch_size / (time.time() - start_time)))
+            
 
     return np.exp(costs / iters)
 
