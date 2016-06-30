@@ -150,8 +150,8 @@ class PTBModel(object):
             self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
             self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
-        #with tf.device("/cpu:0"):
-        inputs = embedded_inputs
+        with tf.device('/gpu:%d' %GPU_ID):
+            inputs = embedded_inputs
 
         # if is_training and config.keep_prob < 1:
         # inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -196,8 +196,8 @@ class PTBModel(object):
                     outputs.append(cell_output)
                     print("finished time_step = %d\n" % time_step)
             self.created_variables=True
-
-        output = tf.reshape(tf.concat(1, outputs), [-1, dim_proj])
+        with tf.device('/gpu:%d' % GPU_ID):
+            output = tf.reshape(tf.concat(1, outputs), [-1, dim_proj])
 
         # mean pooling
         # accumulate along each sentence
