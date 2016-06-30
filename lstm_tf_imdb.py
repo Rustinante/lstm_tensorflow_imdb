@@ -285,12 +285,12 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
         config.num_steps = maxlen
-        print("Creating variables %d th time \n" %mini_batch_number)
+        print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
-        print("Created variables %d th time!!! \n" % mini_batch_number)
-        print("Initializing all variables %d th time \n" % mini_batch_number)
+        print("Created variables %d th time!!! " % mini_batch_number)
+        print("Initializing all variables %d th time " % mini_batch_number)
         tf.initialize_all_variables().run()
-        print("Initialized all variables %d th time!!! \n" % mini_batch_number)
+        print("Initialized all variables %d th time!!! " % mini_batch_number)
         cost, state, _ = session.run([m.cost, m.final_state, m.train_op],
                                  {m.targets: labels_mini,
                                   m.initial_state: state,
@@ -351,7 +351,7 @@ def main(_):
             print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
             #valid_perplexity = run_epoch(session, mvalid, valid_data)
             #print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-
+        print("FINISHED TRAINING\n")
         test_perplexity = run_epoch(session, m, test_data, is_training=False)
         print("Test Perplexity: %.3f" % test_perplexity)
 
