@@ -136,7 +136,7 @@ class PTBModel(object):
 
         self.created_variables = False
         self.word_embedding = (0.01 * np.random.rand(vocabulary_size, dim_proj)).astype('float32')
-        with tf.device('/gpu:%d',%GPU_ID):
+        with tf.device('/gpu:%d' %GPU_ID):
             self.word_embedding = tf.Variable(self.word_embedding, name='word_embedding')
 
 
@@ -146,7 +146,7 @@ class PTBModel(object):
     def create_variables(self, embedded_inputs):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
-        with tf.device('/gpu:%d',%GPU_ID):
+        with tf.device('/gpu:%d' %GPU_ID):
             self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
             self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
@@ -171,7 +171,7 @@ class PTBModel(object):
         state = self._initial_state
         print("in create_variables\n")
         if self.created_variables is True:
-            with tf.variable_scope("RNN",reuse=True), tf.device('/gpu:%d',%GPU_ID):
+            with tf.variable_scope("RNN",reuse=True), tf.device('/gpu:%d' %GPU_ID):
                 softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                             initializer=tf.random_normal_initializer(0, 0.1))
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
@@ -184,7 +184,7 @@ class PTBModel(object):
                     print("finished time_step = %d\n" % time_step)
         else:
             print("in the else statement")
-            with tf.variable_scope("RNN"), tf.device('/gpu:%d',%GPU_ID):
+            with tf.variable_scope("RNN"), tf.device('/gpu:%d' %GPU_ID):
                 softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                             initializer=tf.random_normal_initializer(0, 0.1))
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
@@ -227,7 +227,7 @@ class PTBModel(object):
                                         config.max_grad_norm)
         optimizer = tf.train.AdadeltaOptimizer(learning_rate=self.lr)
         # optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        with tf.device('/gpu:%d',%GPU_ID):
+        with tf.device('/gpu:%d' %GPU_ID):
             self._train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     @property
@@ -273,7 +273,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
 
-    #with tf.device('/gpu:%d',%GPU_ID):
+    #with tf.device('/gpu:%d' %GPU_ID):
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         print("m.created_variables %r" %m.created_variables)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
