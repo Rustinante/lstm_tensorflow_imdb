@@ -208,7 +208,9 @@ class PTBModel(object):
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
 
-        one_hot_targets = tf.one_hot(self._targets, 2, on_value=1., off_value=0.)
+        on_value=float(1)
+        off_value=float(0)
+        one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value)
 
         self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                                                         reduction_indices=1))
@@ -298,7 +300,10 @@ def words_to_embedding(word_embedding, word_matrix):
     dim0 = word_matrix.shape[0]
     dim1 = word_matrix.shape[1]
     unrolled_matrix = tf.reshape(word_matrix,[-1])
-    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=1.0, off_value=0.0, axis=1)
+
+    on_value = float(1)
+    off_value = float(0)
+    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=on_value, off_value=off_value, axis=1)
     embedded_words = tf.matmul(one_hot, word_embedding)
     embedded_words = tf.reshape(embedded_words, [dim0, dim1, dim_proj])
     return embedded_words
