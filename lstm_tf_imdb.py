@@ -227,7 +227,8 @@ class PTBModel(object):
                                         config.max_grad_norm)
         optimizer = tf.train.AdadeltaOptimizer(learning_rate=self.lr)
         # optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        self._train_op = optimizer.apply_gradients(zip(grads, tvars))
+        with tf.device('/gpu:0'):
+            self._train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     @property
     def input_data(self):
