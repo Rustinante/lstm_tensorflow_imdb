@@ -76,7 +76,7 @@ FLAGS = flags.FLAGS
 
 dim_proj=128
 vocabulary_size = 10000
-BATCH_SIZE=60
+BATCH_SIZE=32
 
 class Options(object):
     m_proj = 128
@@ -109,7 +109,7 @@ class Options(object):
     max_max_epoch = 1
     keep_prob = 0.5
     lr_decay = 1
-    batch_size = 16
+    batch_size = BATCH_SIZE
 
 config = Options()
 
