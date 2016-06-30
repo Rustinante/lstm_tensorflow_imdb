@@ -134,9 +134,11 @@ class PTBModel(object):
         self._lr = tf.Variable(0.0, trainable=False)
         self.is_training=is_training
 
-        self.word_embedding = (0.01 * np.random.rand(vocabulary_size, dim_proj)).astype('float32')
-        self.word_embedding = tf.Variable(self.word_embedding, name='word_embedding')
         self.created_variables = False
+        self.word_embedding = (0.01 * np.random.rand(vocabulary_size, dim_proj)).astype('float32')
+        with tf.device('/gpu:0'):
+            self.word_embedding = tf.Variable(self.word_embedding, name='word_embedding')
+
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self.lr, lr_value))
@@ -144,8 +146,9 @@ class PTBModel(object):
     def create_variables(self, embedded_inputs):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
-        self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
-        self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
+        with tf.device('/gpu:0'):
+            self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
+            self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
         #with tf.device("/cpu:0"):
         inputs = embedded_inputs
