@@ -204,31 +204,30 @@ class PTBModel(object):
         segment_IDs = np.arange(batch_size).repeat(num_steps)
         pool_sum = tf.segment_sum(output, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
 
-        with tf.device('/gpu:%d' %GPU_ID):
-            num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-            tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-            pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
+        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+        pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
 
-            offset = 1e-8
-            self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+        offset = 1e-8
+        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
 
-            on_value=float(1)
-            off_value=float(0)
-            one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
+        on_value=float(1)
+        off_value=float(0)
+        one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
 
-            self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
+        self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                                                         reduction_indices=1))
-            self._final_state = state
+        self._final_state = state
 
         #if not self.is_training:
         #    return
 
-            tvars = tf.trainable_variables()
-            grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
-                                            config.max_grad_norm)
-            optimizer = tf.train.AdadeltaOptimizer(learning_rate=self.lr)
+        tvars = tf.trainable_variables()
+        grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
+                                        config.max_grad_norm)
+        optimizer = tf.train.AdadeltaOptimizer(learning_rate=self.lr)
         # optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        #with tf.device('/gpu:%d' %GPU_ID):
+        with tf.device('/gpu:%d' %GPU_ID):
             self._train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     @property
@@ -270,9 +269,9 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
-
-    x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    with tf.device('/gpu:%d' % GPU_ID):
+        x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+        labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
 
     #with tf.device('/gpu:%d' %GPU_ID):
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
