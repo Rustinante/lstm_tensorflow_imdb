@@ -210,7 +210,7 @@ class PTBModel(object):
 
         on_value=float(1)
         off_value=float(0)
-        one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value)
+        one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
 
         self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                                                         reduction_indices=1))
