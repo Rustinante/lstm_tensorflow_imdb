@@ -216,8 +216,8 @@ class PTBModel(object):
                                                         reduction_indices=1))
         self._final_state = state
 
-        if not self.is_training:
-            return
+        #if not self.is_training:
+        #    return
 
         tvars = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
@@ -256,7 +256,7 @@ class PTBModel(object):
 
 
 
-def run_epoch(session, m, data, verbose=False, validation_data=None):
+def run_epoch(session, m, data, is_training, verbose=False, validation_data=None):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
@@ -291,11 +291,9 @@ def run_epoch(session, m, data, verbose=False, validation_data=None):
             print("%.3f perplexity: %.3f speed: %.0f wps" %
                 (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
                 iters * m.batch_size / (time.time() - start_time)))
-            with tf.variable_scope("model", reuse=True,
-                                   initializer=tf.random_uniform_initializer(-config.init_scale, config.init_scale)):
-                validation_model = PTBModel(is_training=False)
-                valid_perplexity = run_epoch(session, validation_model, validation_data,verbose=True)
-                print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+
+            valid_perplexity = run_epoch(session, m, validation_data, is_training=is_training)
+            print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
 
 
 
@@ -341,13 +339,12 @@ def main(_):
             m.assign_lr(session, config.learning_rate * lr_decay)
 
             print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-            train_perplexity = run_epoch(session, m, train_data, verbose=True,validation_data=valid_data)
-
+            train_perplexity = run_epoch(session, m, train_data, is_training=True, verbose=True,validation_data=valid_data)
             print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-            valid_perplexity = run_epoch(session, mvalid, valid_data)
-            print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+            #valid_perplexity = run_epoch(session, mvalid, valid_data)
+            #print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
 
-        test_perplexity = run_epoch(session, mtest, test_data)
+        test_perplexity = run_epoch(session, m, test_data, is_training=False)
         print("Test Perplexity: %.3f" % test_perplexity)
 
 
