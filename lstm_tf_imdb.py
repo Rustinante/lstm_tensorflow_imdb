@@ -294,7 +294,7 @@ def run_epoch(session, m, data, verbose=False, validation_data=None):
             with tf.variable_scope("model", reuse=True,
                                    initializer=tf.random_uniform_initializer(-config.init_scale, config.init_scale)):
                 validation_model = PTBModel(is_training=False)
-                valid_perplexity = run_epoch(session, data=validation_data,validation_model)
+                valid_perplexity = run_epoch(session, validation_model, validation_data,verbose=True)
                 print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
 
 
