@@ -101,7 +101,7 @@ class Options(object):
     test_size = -1,  # If >0, we keep only this number of test example.
 
     init_scale = 0.05
-    learning_rate = 1.0
+    learning_rate = 0.0001
     max_grad_norm = 5
     num_layers = 2
     num_steps = 35
@@ -181,7 +181,7 @@ class PTBModel(object):
                     if time_step > 0: tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = self.cell(inputs[time_step, :, :], state)
                     outputs.append(cell_output)
-                    print("finished time_step = %d" % time_step)
+
         else:
             print("in the else statement")
             with tf.variable_scope("RNN"):#, tf.device('/gpu:%d' %GPU_ID):
