@@ -255,6 +255,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             costs += cost
             iters += m.num_steps
             print("training accuracy is: %f" %accuracy)
+            m.softmax_b.eval(session)
             '''
             if verbose and mini_batch_number % 10 == 0 and counter is not 1:
                 print("VALIDATING ACCURACY\n")
@@ -272,7 +273,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                                           m._mask: mask})
             costs += cost
             iters += m.num_steps
-            m.softmax_b.eval(session)
+
             print("validation/test accuracy is: %f" %accuracy)
 
     return np.exp(costs / iters)
