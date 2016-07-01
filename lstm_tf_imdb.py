@@ -272,6 +272,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                                           m._mask: mask})
             costs += cost
             iters += m.num_steps
+            m.softmax_b.eval(session)
             print("validation/test accuracy is: %f" %accuracy)
 
     return np.exp(costs / iters)
@@ -297,7 +298,7 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=30,sort_by_len=False)
+    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=50,sort_by_len=False)
     session=tf.Session()
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
