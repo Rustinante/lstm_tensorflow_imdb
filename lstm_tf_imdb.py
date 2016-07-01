@@ -304,7 +304,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             costs += cost
             iters += m.num_steps
             print("training accuracy is: %f" %accuracy)
-            if verbose and mini_batch_number % 10 == 0 and counter is not 1 and False:
+            '''
+            if verbose and mini_batch_number % 10 == 0 and counter is not 1:
                 print("VALIDATING ACCURACY\n")
                 print("%.3f perplexity: %.3f speed: %.0f wps" %
                     (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
@@ -313,6 +314,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                 valid_perplexity = run_epoch(session, m, validation_data, is_training=False)
                 print("Epoch: %d Valid Perplexity: %.3f" % (1, valid_perplexity))
                 print("finished VALIDATING ACCURACY\n")
+                '''
         else:
             cost, state, accuracy = session.run([m.cost, m.final_state, m.accuracy],
                                          {m.targets: labels_mini,
