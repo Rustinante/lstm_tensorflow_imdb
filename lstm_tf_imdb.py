@@ -242,6 +242,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         counter+=1
 
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
+        print("x_mini is")
+        print(x_mini)
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
         config.num_steps = maxlen
         print("Creating variables %d th time " %mini_batch_number)
@@ -268,7 +270,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
                 valid_perplexity = run_epoch(session, m, validation_data, is_training=False)
                 print("Epoch: %d Valid Perplexity: %.3f" % (1, valid_perplexity))
-                print("finished VALIDATING ACCURACY\n")
+                print("finished VALIDATING ACCURACY")
                 '''
         else:
             cost, state, accuracy = session.run([m.cost, m.final_state, m.accuracy],
