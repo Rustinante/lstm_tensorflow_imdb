@@ -160,7 +160,7 @@ class LSTM_Model(object):
             (cell_output, state) = self.cell(embedded_inputs[:, time_step, :], state)
 
             self.outputs.append(cell_output)
-        print(tf.concat(1, self.outputs)
+
         self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, dim_proj])
         #self.outputs now has dim (num_steps * batch_size x dim_proj)
         #each small block of the matrix is a sentence's transformed output
