@@ -157,7 +157,6 @@ class LSTM_Model(object):
         for time_step in range(num_steps):
             if time_step > 0:
                 tf.get_variable_scope().reuse_variables()
-            print(state)
             (cell_output, state) = self.cell(embedded_inputs[:, time_step, :], state)
 
             self.outputs.append(cell_output)
@@ -248,9 +247,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         tf.initialize_all_variables().run()
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            cost, state, _, accuracy = session.run([m.cost, m.final_state, m.train_op,m.accuracy],
+            cost, _, accuracy = session.run([m.cost, m.train_op,m.accuracy],
                                      {m._targets: labels_mini,
-                                      m._initial_state: state,
                                       m._mask: mask})
             print("adding cost to costs the cost")
             costs += cost
@@ -268,9 +266,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                 print("finished VALIDATING ACCURACY")
                 '''
         else:
-            cost, state, accuracy = session.run([m.cost, m.final_state, m.accuracy],
+            cost, accuracy = session.run([m.cost, m.final_state, m.accuracy],
                                          {m.targets: labels_mini,
-                                          m.initial_state: state,
                                           m._mask: mask})
             costs += cost
             iters += m.num_steps
