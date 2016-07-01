@@ -131,7 +131,7 @@ class PTBModel(object):
         # cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * config.num_layers)
 
         self._initial_state = self.cell.zero_state(batch_size, tf.float32)
-        self._lr = tf.Variable(0.0, trainable=False)
+        self._lr = tf.Variable(config.lrate, trainable=False)
         self.is_training=is_training
 
         self.created_variables = False
@@ -353,9 +353,6 @@ def main(_):
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
         with tf.variable_scope("model", reuse=None, initializer=initializer):
             m = PTBModel(is_training=True)
-        with tf.variable_scope("model", reuse=True, initializer=initializer):
-            mvalid = PTBModel(is_training=False)
-            mtest  = PTBModel(is_training=False)
 
         for i in range(config.max_max_epoch):
             #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
