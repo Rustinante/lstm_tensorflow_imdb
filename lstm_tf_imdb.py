@@ -232,9 +232,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    print("length of x is: %d" %len(x))
-    print("length of x[0][0] is: %d"%len(x[0][0]))
-    print(x[0][0])
+
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
@@ -299,9 +297,10 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05)
-
-    with tf.Graph().as_default(), tf.Session() as session:
+    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=60,sort_by_len=False)
+    sess=tf.Session()
+    #with tf.Graph().as_default(), tf.Session() as session:
+    with sess.as_default():
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
         with tf.variable_scope("model", reuse=None, initializer=initializer):
             m = LSTM_Model()
