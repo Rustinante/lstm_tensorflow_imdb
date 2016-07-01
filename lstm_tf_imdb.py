@@ -136,7 +136,6 @@ class LSTM_Model(object):
         self.num_steps = num_steps = config.num_steps
         self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
-        self.inputs = embedded_inputs
 
         # if is_training and config.keep_prob < 1:
         # inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -158,7 +157,8 @@ class LSTM_Model(object):
         for time_step in range(num_steps):
             if time_step > 0:
                 tf.get_variable_scope().reuse_variables()
-            (cell_output, state) = self.cell(self.inputs[:, time_step, :], state)
+            print(embedded_inputs[:, time_step, :].eval())
+            (cell_output, state) = self.cell(embedded_inputs[:, time_step, :], state)
             self.outputs.append(cell_output)
 
         self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, dim_proj])
@@ -197,27 +197,21 @@ class LSTM_Model(object):
     @property
     def input_data(self):
         return self._input_data
-
     @property
     def targets(self):
         return self._targets
-
     @property
     def initial_state(self):
         return self._initial_state
-
     @property
     def cost(self):
         return self._cost
-
     @property
     def final_state(self):
         return self._final_state
-
     @property
     def lr(self):
       return self._lr
-
     @property
     def train_op(self):
       return self._train_op
@@ -242,10 +236,9 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         counter+=1
 
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
-        print("x_mini is")
-        print(x_mini)
-        embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
         config.num_steps = maxlen
+        embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
+
         print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
         state=m.initial_state.eval()
@@ -284,9 +277,9 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     return np.exp(costs / iters)
 
 def words_to_embedding(word_embedding, word_matrix):
-    dim0 = word_matrix.shape[0]  # maxlen
-    dim1 = word_matrix.shape[1]  # n_samples
-    print("in words_to_embedding, dim0= %d , dim1= %d" %(dim0,dim1))
+    maxlen = word_matrix.shape[0]
+    n_samples = word_matrix.shape[1]
+    print("in words_to_embedding, maxlen= %d , n_samples= %d" %(maxlen ,n_samples))
 
     unrolled_matrix = tf.reshape(word_matrix,[-1])
 
@@ -294,8 +287,8 @@ def words_to_embedding(word_embedding, word_matrix):
     off_value = float(0)
     one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=on_value, off_value=off_value, axis=1)
     embedded_words = tf.matmul(one_hot, word_embedding)
-    embedded_words = tf.reshape(embedded_words, [dim0, dim1, dim_proj])
-    print("embedded_words has dimension = (%d x %d x %d) "%(dim0, dim1, dim_proj))
+    embedded_words = tf.reshape(embedded_words, [maxlen, n_samples, dim_proj])
+    print("embedded_words has dimension = (%d x %d x %d) "%(maxlen, n_samples, dim_proj))
     return embedded_words
 
 def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
