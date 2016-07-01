@@ -219,7 +219,7 @@ class PTBModel(object):
                             reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(tf.argmax(predictions, 1), tf.argmax(self._targets, 1))
-        self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
+        self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
         print("finished computing the cost")
         self._final_state = state
