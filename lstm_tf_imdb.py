@@ -95,7 +95,7 @@ class Options(object):
     num_layers = 2
     num_steps = None
     hidden_size = 128
-    max_max_epoch = 1
+    max_max_epoch = 5
     keep_prob = 1
     lr_decay = 1
     batch_size = BATCH_SIZE
@@ -297,7 +297,7 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=60,sort_by_len=False)
+    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=30,sort_by_len=False)
     session=tf.Session()
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
