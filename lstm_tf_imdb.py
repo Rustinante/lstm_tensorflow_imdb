@@ -172,13 +172,13 @@ class PTBModel(object):
         state = self._initial_state
         print("in create_variables")
         if self.created_variables is True:
-            """
+
             with tf.variable_scope("RNN",reuse=True):#, tf.device('/gpu:%d' %GPU_ID):
-                softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
-                                            initializer=tf.random_normal_initializer(0, 0.1))
-                softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
-                                        initializer=tf.constant_initializer(0, tf.float32))
-            """
+                softmax_w = tf.get_variable("softmax_w", [dim_proj, 2])
+                                            #dtype=tf.float32,initializer=tf.random_normal_initializer(0, 0.1))
+                softmax_b = tf.get_variable("softmax_b", [2])
+                #dtype=tf.float32, initializer=tf.constant_initializer(0, tf.float32))
+
             for time_step in range(num_steps):
                 if time_step > 0: tf.get_variable_scope().reuse_variables()
                 (cell_output, state) = self.cell(inputs[time_step, :, :], state)
@@ -236,7 +236,7 @@ class PTBModel(object):
         # optimizer = tf.train.GradientDescentOptimizer(self.lr)
         #self._train_op = optimizer.apply_gradients(zip(grads, tvars))
         print("finished creating variables")
-        
+
     @property
     def input_data(self):
         return self._input_data
