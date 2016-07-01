@@ -90,7 +90,7 @@ class Options(object):
     test_size = -1,  # If >0, we keep only this number of test example.
 
     init_scale = 0.05
-    learning_rate = 0.0001
+    learning_rate = 0.01
     max_grad_norm = 5
     num_layers = 2
     num_steps = None
@@ -190,7 +190,7 @@ class LSTM_Model(object):
 
         print("finished computing the cost")
         self._final_state = state
-        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
+        self._train_op = tf.train.GradientDescentOptimizer(learning_rate=self._lr).minimize(self._cost)
 
         print("finished creating variables")
 
@@ -248,7 +248,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         session.run(tf.initialize_all_variables())
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            cost, _, accuracy = session.run([m.cost, m.train_op,m.accuracy],
+            cost, _, accuracy = session.run([m.cost, m._train_op,m.accuracy],
                                      {m._targets: labels_mini,
                                       m._mask: mask})
             print("adding cost to costs the cost")
