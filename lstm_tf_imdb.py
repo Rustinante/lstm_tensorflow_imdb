@@ -216,7 +216,11 @@ class PTBModel(object):
         one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
         print("computing the cost \n")
         self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
-                                                        reduction_indices=1))
+                            reduction_indices=1))
+        self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
+        self.correct_predictions = tf.equal(tf.argmax(predictions, 1), tf.argmax(self._targets, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
+
         print("finished computing the cost")
         self._final_state = state
 
@@ -292,29 +296,30 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         tf.initialize_all_variables().run()
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            cost, state, _ = session.run([m.cost, m.final_state, m.train_op],
+            cost, state, _, accuracy = session.run([m.cost, m.final_state, m.train_op,m.accuracy],
                                      {m.targets: labels_mini,
                                       m.initial_state: state,
                                       m._mask: mask})
             costs += cost
             iters += m.num_steps
-
+            print("training accuracy is: %f" %accuracy)
             if verbose and mini_batch_number % 10 == 0 and counter is not 1:
-                print("VALIDATING ACCURACY")
+                print("VALIDATING ACCURACY\n")
                 print("%.3f perplexity: %.3f speed: %.0f wps" %
                     (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
                     iters * m.batch_size / (time.time() - start_time)))
 
                 valid_perplexity = run_epoch(session, m, validation_data, is_training=False)
-                print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-                print("finished VALIDATING ACCURACY")
+                print("Epoch: %d Valid Perplexity: %.3f" % (1, valid_perplexity))
+                print("finished VALIDATING ACCURACY\n")
         else:
-            cost, state = session.run([m.cost, m.final_state],
+            cost, state, accuracy = session.run([m.cost, m.final_state, m.accuracy],
                                          {m.targets: labels_mini,
                                           m.initial_state: state,
                                           m._mask: mask})
             costs += cost
             iters += m.num_steps
+            print("validation/test accuracy is: %f" %accuracy)
 
     return np.exp(costs / iters)
 
@@ -342,8 +347,6 @@ def main(_):
     # raw_data = reader.ptb_raw_data(FLAGS.data_path)
     # train_data, valid_data, test_data, _ = raw_data
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05)
-
-
 
     with tf.Graph().as_default(), tf.Session() as session:
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
