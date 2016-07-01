@@ -93,7 +93,7 @@ class Options(object):
     learning_rate = 0.0001
     max_grad_norm = 5
     num_layers = 2
-    num_steps = 35
+    num_steps = None
     hidden_size = 128
     max_max_epoch = 1
     keep_prob = 1
@@ -157,6 +157,7 @@ class LSTM_Model(object):
         for time_step in range(num_steps):
             if time_step > 0:
                 tf.get_variable_scope().reuse_variables()
+            print(state)
             (cell_output, state) = self.cell(embedded_inputs[:, time_step, :], state)
 
             self.outputs.append(cell_output)
@@ -247,7 +248,6 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         tf.initialize_all_variables().run()
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            print("inside if ")
             cost, state, _, accuracy = session.run([m.cost, m.final_state, m.train_op,m.accuracy],
                                      {m._targets: labels_mini,
                                       m._initial_state: state,
