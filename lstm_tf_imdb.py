@@ -358,9 +358,9 @@ def main(_):
             mtest  = PTBModel(is_training=False)
 
         for i in range(config.max_max_epoch):
-            lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
-            m.assign_lr(session, config.learning_rate * lr_decay)
-
+            #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
+            #m.assign_lr(session, config.learning_rate * lr_decay)
+            m.assign_lr(session, config.learning_rate)
             print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
             train_perplexity = run_epoch(session, m, train_data, is_training=True, verbose=True,validation_data=valid_data)
             print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
