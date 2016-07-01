@@ -176,7 +176,7 @@ class LSTM_Model(object):
         pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
         print("mean pooling finished")
         offset = 1e-8
-        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
 
         on_value=float(1)
         off_value=float(0)
