@@ -158,7 +158,7 @@ class LSTM_Model(object):
         for time_step in range(num_steps):
             if time_step > 0:
                 tf.get_variable_scope().reuse_variables()
-            (cell_output, state) = self.cell(self.inputs[time_step, :, :], state)
+            (cell_output, state) = self.cell(self.inputs[:, time_step, :], state)
             self.outputs.append(cell_output)
 
         self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, dim_proj])
@@ -294,8 +294,8 @@ def words_to_embedding(word_embedding, word_matrix):
     off_value = float(0)
     one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=on_value, off_value=off_value, axis=1)
     embedded_words = tf.matmul(one_hot, word_embedding)
-    embedded_words = tf.reshape(embedded_words, [dim1, dim0, dim_proj])
-    print("embedded_words has dimension = (%d x %d x %d) "%(dim1, dim0, dim_proj))
+    embedded_words = tf.reshape(embedded_words, [dim0, dim1, dim_proj])
+    print("embedded_words has dimension = (%d x %d x %d) "%(dim0, dim1, dim_proj))
     return embedded_words
 
 def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
