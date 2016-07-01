@@ -170,17 +170,20 @@ class PTBModel(object):
 
         outputs = []
         state = self._initial_state
-        print("in create_variables\n")
+        print("in create_variables")
         if self.created_variables is True:
+            """
             with tf.variable_scope("RNN",reuse=True):#, tf.device('/gpu:%d' %GPU_ID):
                 softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                             initializer=tf.random_normal_initializer(0, 0.1))
                 softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                         initializer=tf.constant_initializer(0, tf.float32))
-                for time_step in range(num_steps):
-                    if time_step > 0: tf.get_variable_scope().reuse_variables()
-                    (cell_output, state) = self.cell(inputs[time_step, :, :], state)
-                    outputs.append(cell_output)
+            """
+            for time_step in range(num_steps):
+                if time_step > 0: tf.get_variable_scope().reuse_variables()
+                (cell_output, state) = self.cell(inputs[time_step, :, :], state)
+                outputs.append(cell_output)
+
 
         else:
             print("in the else statement")
@@ -193,21 +196,20 @@ class PTBModel(object):
                     if time_step > 0: tf.get_variable_scope().reuse_variables()
                     (cell_output, state) = self.cell(inputs[time_step, :, :], state)
                     outputs.append(cell_output)
-                    print("finished time_step = %d" % time_step)
             self.created_variables=True
         #with tf.device('/gpu:%d' % GPU_ID):***
         output = tf.reshape(tf.concat(1, outputs), [-1, dim_proj])
 
         # mean pooling
         # accumulate along each sentence
-        print("mean pooling starts\n")
+        print("mean pooling starts")
         segment_IDs = np.arange(batch_size).repeat(num_steps)
         pool_sum = tf.segment_sum(output, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
         pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
-        print("mean pooling finished\n")
+        print("mean pooling finished")
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
 
@@ -223,19 +225,18 @@ class PTBModel(object):
 
         print("finished computing the cost")
         self._final_state = state
+        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self.lr).minimize(self._cost)
 
         #if not self.is_training:
         #    return
         #with tf.device('/gpu:%d' % GPU_ID):***
-        tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
-                                        config.max_grad_norm)
-        optimizer = tf.train.AdadeltaOptimizer(learning_rate=self.lr)
-        # optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        #with tf.device('/gpu:%d' %GPU_ID):***
-        self._train_op = optimizer.apply_gradients(zip(grads, tvars))
+        #tvars = tf.trainable_variables()
+        #grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars), config.max_grad_norm)
 
+        # optimizer = tf.train.GradientDescentOptimizer(self.lr)
+        #self._train_op = optimizer.apply_gradients(zip(grads, tvars))
         print("finished creating variables")
+        
     @property
     def input_data(self):
         return self._input_data
