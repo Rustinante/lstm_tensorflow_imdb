@@ -234,6 +234,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     print("length of x is: %d" %len(x))
     print("length of x[0][0] is: %d"%len(x[0][0]))
+    print(x[0][0])
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
