@@ -298,9 +298,9 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
 
 def main():
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=60,sort_by_len=False)
-    sess=tf.Session()
+    session=tf.Session()
     #with tf.Graph().as_default(), tf.Session() as session:
-    with sess.as_default():
+    with session.as_default():
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
         with tf.variable_scope("model", reuse=None, initializer=initializer):
             m = LSTM_Model()
