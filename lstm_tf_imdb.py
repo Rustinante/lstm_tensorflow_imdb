@@ -229,7 +229,6 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     start_time = time.time()
     costs = 0.0
     iters = 0
-    state = m.initial_state.eval()
 
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
@@ -247,6 +246,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         config.num_steps = maxlen
         print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
+
         print("Created variables %d th time!!! " % mini_batch_number)
         print("Initializing all variables %d th time " % mini_batch_number)
         tf.initialize_all_variables().run()
