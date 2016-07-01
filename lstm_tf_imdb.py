@@ -282,15 +282,17 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     return np.exp(costs / iters)
 
 def words_to_embedding(word_embedding, word_matrix):
-    dim0 = word_matrix.shape[0]
-    dim1 = word_matrix.shape[1]
+    dim0 = word_matrix.shape[0]  # maxlen
+    dim1 = word_matrix.shape[1]  # n_samples
+    print("in words_to_embedding, dim0= %d , dim1= %d" %(dim0,dim1))
+
     unrolled_matrix = tf.reshape(word_matrix,[-1])
 
     on_value = float(1)
     off_value = float(0)
     one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=on_value, off_value=off_value, axis=1)
     embedded_words = tf.matmul(one_hot, word_embedding)
-    embedded_words = tf.reshape(embedded_words, [dim0, dim1, dim_proj])
+    embedded_words = tf.reshape(embedded_words, [dim1, dim0, dim_proj])
     return embedded_words
 
 def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
