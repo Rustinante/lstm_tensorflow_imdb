@@ -190,7 +190,7 @@ class LSTM_Model(object):
 
         print("finished computing the cost")
         self._final_state = state
-        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self.lr).minimize(self._cost)
+        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
 
         print("finished creating variables")
 
