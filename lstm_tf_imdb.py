@@ -62,17 +62,6 @@ import numpy as np
 import tensorflow as tf
 from imdb import *
 
-'''
-flags = tf.flags
-logging = tf.logging
-
-flags.DEFINE_string(
-    "model", "small",
-    "A type of model. Possible options are: small, medium, large.")
-flags.DEFINE_string("data_path", None, "data_path")
-
-FLAGS = flags.FLAGS
-'''
 GPU_ID=1
 dim_proj=128
 vocabulary_size = 10000
@@ -113,47 +102,41 @@ class Options(object):
 
 config = Options()
 
-class PTBModel(object):
-    """The PTB model."""
-
-    def __init__(self, is_training):
-        size = config.hidden_size
-        batch_size = config.batch_size
-        # Slightly better results can be obtained with forget gate biases
-        # initialized to 1 but the hyperparameters of the model would need to be
-        # different than reported in the paper.
-        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(size, forget_bias=0.0)
+class LSTM_Model(object):
+    def __init__(self):
+        #number of LSTM units, in this case it is dim_proj=128
+        self.size = config.hidden_size
+        #one LSTM cell with 128 units
+        self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.size, forget_bias=0.0)
+        # learning rate as a tf variable. Its value is therefore session dependent
+        self._lr = tf.Variable(config.lrate, trainable=False)
+        '''
         if is_training and config.keep_prob < 1:
             lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
                 lstm_cell, output_keep_prob=config.keep_prob)
+        '''
 
-        self.cell = lstm_cell
-        # cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * config.num_layers)
-
-        self._initial_state = self.cell.zero_state(batch_size, tf.float32)
-        self._lr = tf.Variable(config.lrate, trainable=False)
-        self.is_training=is_training
-
-        self.created_variables = False
-        self.word_embedding = (0.01 * np.random.rand(vocabulary_size, dim_proj)).astype('float32')
-        #with tf.device('/gpu:%d' %GPU_ID):***
-        self.word_embedding = tf.Variable(self.word_embedding, name='word_embedding')
-
+        with tf.variable_scope("RNN"):
+            # initialize a word_embedding scheme out of random
+            self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
+                                                  initializer=tf.random_uniform_initializer(minval=0,maxval=0.01))
+            # softmax weights and bias
+            self.softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
+                                             initializer=tf.random_normal_initializer(0, 0.1))
+            self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
+                                             initializer=tf.constant_initializer(0, tf.float32))
 
     def assign_lr(self, session, lr_value):
-        print("assigning learning rate to be %f "%lr_value)
-        session.run(tf.assign(self.lr, lr_value))
+        session.run(tf.assign(self._lr, lr_value))
 
     def create_variables(self, embedded_inputs):
         print("creating variables")
+        self._initial_state = self.cell.zero_state(batch_size, tf.float32)
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
-        #with tf.device('/gpu:%d' %GPU_ID):***
         self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
-
-        #with tf.device('/gpu:%d' %GPU_ID):***
-        inputs = embedded_inputs
+        self.inputs = embedded_inputs
 
         # if is_training and config.keep_prob < 1:
         # inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -169,43 +152,24 @@ class PTBModel(object):
         #           for input_ in tf.split(1, num_steps, inputs)]
         # outputs, state = rnn.rnn(cell, inputs, initial_state=self._initial_state)
 
-        outputs = []
+        self.outputs = []
         state = self._initial_state
         print("in create_variables")
-        if self.created_variables is True:
+        for time_step in range(num_steps):
+            if time_step > 0:
+                tf.get_variable_scope().reuse_variables()
+            (cell_output, state) = self.cell(self.inputs[time_step, :, :], state)
+            self.outputs.append(cell_output)
 
-            with tf.variable_scope("RNN",reuse=True):#, tf.device('/gpu:%d' %GPU_ID):
-                softmax_w = tf.get_variable("softmax_w", [dim_proj, 2])
-                                            #dtype=tf.float32,initializer=tf.random_normal_initializer(0, 0.1))
-                softmax_b = tf.get_variable("softmax_b", [2])
-                #dtype=tf.float32, initializer=tf.constant_initializer(0, tf.float32))
-
-            for time_step in range(num_steps):
-                if time_step > 0: tf.get_variable_scope().reuse_variables()
-                (cell_output, state) = self.cell(inputs[time_step, :, :], state)
-                outputs.append(cell_output)
-
-
-        else:
-            print("in the else statement")
-            with tf.variable_scope("RNN"):#, tf.device('/gpu:%d' %GPU_ID):
-                softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
-                                            initializer=tf.random_normal_initializer(0, 0.1))
-                softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
-                                        initializer=tf.constant_initializer(0, tf.float32))
-                for time_step in range(num_steps):
-                    if time_step > 0: tf.get_variable_scope().reuse_variables()
-                    (cell_output, state) = self.cell(inputs[time_step, :, :], state)
-                    outputs.append(cell_output)
-            self.created_variables=True
-        #with tf.device('/gpu:%d' % GPU_ID):***
-        output = tf.reshape(tf.concat(1, outputs), [-1, dim_proj])
+        self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, dim_proj])
+        #self.outputs now has dim (num_steps * batch_size x dim_proj)
+        #each small block of the matrix is a sentence's transformed output
 
         # mean pooling
         # accumulate along each sentence
         print("mean pooling starts")
         segment_IDs = np.arange(batch_size).repeat(num_steps)
-        pool_sum = tf.segment_sum(output, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
+        pool_sum = tf.segment_sum(self.outputs, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
@@ -217,8 +181,8 @@ class PTBModel(object):
         on_value=float(1)
         off_value=float(0)
         one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
-        print("computing the cost \n")
-        self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
+        print("computing the cost")
+        self._cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                             reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, self._targets)
@@ -228,14 +192,6 @@ class PTBModel(object):
         self._final_state = state
         self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self.lr).minimize(self._cost)
 
-        #if not self.is_training:
-        #    return
-        #with tf.device('/gpu:%d' % GPU_ID):***
-        #tvars = tf.trainable_variables()
-        #grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars), config.max_grad_norm)
-
-        # optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        #self._train_op = optimizer.apply_gradients(zip(grads, tvars))
         print("finished creating variables")
 
     @property
@@ -278,7 +234,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
     print("total number of batches is: %d" %total_num_batches)
-    #***with tf.device('/gpu:%d' % GPU_ID):
+
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
 
@@ -342,18 +298,13 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     np.random.shuffle(index_list)
     return index_list[:_batch_size]
 
-def main(_):
-    #if not FLAGS.data_path:
-    #    raise ValueError("Must set --data_path to PTB data directory")
-
-    # raw_data = reader.ptb_raw_data(FLAGS.data_path)
-    # train_data, valid_data, test_data, _ = raw_data
+def main():
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05)
 
     with tf.Graph().as_default(), tf.Session() as session:
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
         with tf.variable_scope("model", reuse=None, initializer=initializer):
-            m = PTBModel(is_training=True)
+            m = LSTM_Model()
 
         for i in range(config.max_max_epoch):
             #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
