@@ -131,7 +131,7 @@ class LSTM_Model(object):
 
     def create_variables(self, embedded_inputs):
         print("creating variables")
-        self._initial_state = self.cell.zero_state(batch_size, tf.float32)
+        self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
         self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
