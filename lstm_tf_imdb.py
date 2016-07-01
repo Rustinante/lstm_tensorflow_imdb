@@ -73,7 +73,6 @@ class Options(object):
     max_epoch = 5000
     display_frequency = 10
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
-    lrate = 0.0001  # Learning rate for sgd (not used for adadelta and rmsprop)
     vocabulary_size = 10000  # Vocabulary size
     # optimizer=adadelta  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
     encoder = 'lstm'  # TODO: can be removed must be lstm.
@@ -90,7 +89,7 @@ class Options(object):
     test_size = -1,  # If >0, we keep only this number of test example.
 
     init_scale = 0.05
-    learning_rate = 0.01
+    learning_rate = 0.001
     max_grad_norm = 5
     num_layers = 2
     num_steps = None
@@ -109,7 +108,7 @@ class LSTM_Model(object):
         #one LSTM cell with 128 units
         self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.size, forget_bias=0.0)
         # learning rate as a tf variable. Its value is therefore session dependent
-        self._lr = tf.Variable(config.lrate, trainable=False)
+        self._lr = tf.Variable(config.learning_rate, trainable=False)
         '''
         if is_training and config.keep_prob < 1:
             lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
@@ -190,7 +189,7 @@ class LSTM_Model(object):
 
         print("finished computing the cost")
         self._final_state = state
-        self._train_op = tf.train.GradientDescentOptimizer(learning_rate=self._lr).minimize(self._cost)
+        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
 
         print("finished creating variables")
 
