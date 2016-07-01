@@ -246,15 +246,15 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         config.num_steps = maxlen
         print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
-
+        state=m.initial_state
         print("Created variables %d th time!!! " % mini_batch_number)
         print("Initializing all variables %d th time " % mini_batch_number)
         tf.initialize_all_variables().run()
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
             cost, state, _, accuracy = session.run([m.cost, m.final_state, m.train_op,m.accuracy],
-                                     {m.targets: labels_mini,
-                                      m.initial_state: state,
+                                     {m._targets: labels_mini,
+                                      m._initial_state: state,
                                       m._mask: mask})
             costs += cost
             iters += m.num_steps
