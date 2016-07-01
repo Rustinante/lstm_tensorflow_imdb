@@ -226,11 +226,14 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
-    print("total number of batches is: %d" %total_num_batches)
+
+    print("length of the data is: %d" %len(data[0]))
+    print("total number of batches is: %d" % total_num_batches)
 
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-
+    print("length of x is: %d" %len(x))
+    print("length of x[0] is: %d"%len(x[0]))
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
@@ -265,7 +268,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                 print("finished VALIDATING ACCURACY")
                 '''
         else:
-            cost, accuracy = session.run([m.cost, m.final_state, m.accuracy],
+            cost, accuracy = session.run([m.cost, m.accuracy],
                                          {m.targets: labels_mini,
                                           m._mask: mask})
             costs += cost
