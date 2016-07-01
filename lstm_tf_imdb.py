@@ -218,7 +218,7 @@ class PTBModel(object):
         self._cost = cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
                             reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
-        self.correct_predictions = tf.equal(tf.argmax(self.predictions, 1), tf.argmax(self._targets, 1))
+        self.correct_predictions = tf.equal(self.predictions, self._targets)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
         print("finished computing the cost")
