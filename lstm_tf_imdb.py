@@ -240,7 +240,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
-        print("m.created_variables %r" %m.created_variables)
+
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
         config.num_steps = maxlen
