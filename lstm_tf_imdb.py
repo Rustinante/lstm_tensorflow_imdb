@@ -241,10 +241,9 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
 
         print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
-        state=m.initial_state.eval()
         print("Created variables %d th time!!! " % mini_batch_number)
         print("Initializing all variables %d th time " % mini_batch_number)
-        tf.initialize_all_variables().run()
+        session.run(tf.initialize_all_variables())
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
             cost, _, accuracy = session.run([m.cost, m.train_op,m.accuracy],
