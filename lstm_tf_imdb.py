@@ -141,6 +141,7 @@ class PTBModel(object):
 
 
     def assign_lr(self, session, lr_value):
+        print("assigning learning rate to be %f "%lr_value)
         session.run(tf.assign(self.lr, lr_value))
 
     def create_variables(self, embedded_inputs):
