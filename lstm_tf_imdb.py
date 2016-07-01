@@ -302,8 +302,7 @@ def main():
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
-        with tf.variable_scope("model", reuse=None, initializer=initializer):
-            m = LSTM_Model()
+        m = LSTM_Model()
 
         for i in range(config.max_max_epoch):
             #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
