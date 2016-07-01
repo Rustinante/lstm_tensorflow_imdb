@@ -157,7 +157,7 @@ class LSTM_Model(object):
         for time_step in range(num_steps):
             if time_step > 0:
                 tf.get_variable_scope().reuse_variables()
-            print(embedded_inputs[:, time_step, :].eval())
+            print(embedded_inputs[:, time_step, :])
             (cell_output, state) = self.cell(embedded_inputs[:, time_step, :], state)
             self.outputs.append(cell_output)
 
