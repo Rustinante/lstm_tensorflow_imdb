@@ -101,7 +101,6 @@ class LSTM_Model(object):
             self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.constant_initializer(random_normal))
             print("word_embedding is:")
-            print(self.word_embedding.eval())
             # softmax weights and bias
             np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
@@ -120,7 +119,6 @@ class LSTM_Model(object):
 
             self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_W))
             self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_U))
-            print(self.lstm_W.eval())
             self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(0,dtype=tf.float32))
 
     def assign_lr(self, session, lr_value):
@@ -240,8 +238,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
-        #print("x is:")
-        #print(_x)
+        print("x is:")
+        print(_x)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         config.num_steps = maxlen
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
@@ -254,6 +252,10 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print("Initializing all variables %d th time " % mini_batch_number)
         '''
         session.run(tf.initialize_all_variables())
+        print("word embedding is:")
+        print(m.word_embedding.eval())
+        print("embedded_inputs is:")
+        print(embedded_inputs)
         #print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
             #with tf.device("/gpu:0"):
