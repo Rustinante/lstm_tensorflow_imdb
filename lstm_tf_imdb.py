@@ -13,21 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Example / benchmark for building a PTB LSTM model.
-
-Trains the model described in:
-(Zaremba, et. al.) Recurrent Neural Network Regularization
-http://arxiv.org/abs/1409.2329
-
-There are 3 supported model configurations:
-===========================================
-| config | epochs | train | valid  | test
-===========================================
-| small  | 13     | 37.99 | 121.39 | 115.91
-| medium | 39     | 48.45 |  86.16 |  82.07
-| large  | 55     | 37.87 |  82.62 |  78.29
-The exact results may vary depending on the random initialization.
-
+"""
 The hyperparameters used in the model:
 - init_scale - the initial scale of the weights
 - learning_rate - the initial value of the learning rate
@@ -40,16 +26,6 @@ The hyperparameters used in the model:
 - keep_prob - the probability of keeping weights in the dropout layer
 - lr_decay - the decay of the learning rate for each epoch after "max_epoch"
 - batch_size - the batch size
-
-The data required for this example is in the data/ dir of the
-PTB dataset from Tomas Mikolov's webpage:
-
-$ wget http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
-$ tar xvf simple-examples.tgz
-
-To run:
-
-$ python ptb_word_lm.py --data_path=simple-examples/data/
 
 """
 from __future__ import absolute_import
@@ -75,22 +51,18 @@ class Options(object):
     display_frequency = 10
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     vocabulary_size = 10000  # Vocabulary size
-    # optimizer=adadelta  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
-    encoder = 'lstm'  # TODO: can be removed must be lstm.
     saveto = 'lstm_model.npz'  # The best model will be saved there
     validFreq = 370  # Compute the validation error after this number of update.
     saveFreq = 1110  # Save the parameters after every saveFreq updates
     maxlen = 100  # Sequence longer then this get ignored
     valid_batch_size = 64  # The batch size used for validation/test set.
-    dataset = 'imdb'
-    noise_std = 0.,
     use_dropout = True,  # if False slightly faster, but worst test error
     # This frequently need a bigger model.
     reload_model = None,  # Path to a saved model we want to start from.
     test_size = -1,  # If >0, we keep only this number of test example.
 
     init_scale = 0.05
-    learning_rate = 0.001
+    learning_rate = 0.0001
     max_grad_norm = 5
     num_layers = 2
     num_steps = None
@@ -106,10 +78,6 @@ class LSTM_Model(object):
     def __init__(self):
         #number of LSTM units, in this case it is dim_proj=128
         self.size = config.hidden_size
-        #one LSTM cell with 128 units
-
-        self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.size, forget_bias=0.0)
-
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         '''
@@ -130,7 +98,7 @@ class LSTM_Model(object):
             # cell weights and bias
             self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
             self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
-            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj], initializer=tf.constant_initializer(0,dtype=tf.float32))
+            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(0,dtype=tf.float32))
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
@@ -167,7 +135,7 @@ class LSTM_Model(object):
         self.c=tf.zeros([batch_size,dim_proj])
         for t in range(num_steps):
             self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
-                                  tf.matmul(tf.squeeze(tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1])),self.lstm_W),
+                                  tf.matmul(tf.squeeze(tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1])),self.lstm_W)+self.lstm_b,
                                   self.h, self.c)
             self.outputs.append(tf.expand_dims(self.h,-1))
 
