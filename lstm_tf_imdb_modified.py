@@ -152,7 +152,6 @@ class LSTM_Model(object):
         if t == 0:
             self.h = np.zeros([n_samples, dim_proj])
             self.c = np.zeros([n_samples, dim_proj])
-        print(self._mask.type)
         slice_temp=tf.slice(self._mask, [t, 0], [1, -1])
         self.h, self.c = LSTM_Cell_with_Mask.step(
             slice_temp, tf.matmul(tf.squeeze(embedded_inputs_slice), self.lstm_W) + self.lstm_b,
