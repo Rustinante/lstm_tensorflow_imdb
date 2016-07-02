@@ -96,8 +96,12 @@ class LSTM_Model(object):
 
         with tf.variable_scope("RNN"):
             # initialize a word_embedding scheme out of random
+            seed(123)
+            random_normal = 0.01 * np.random.rand(10000, dim_proj)
             self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
-                                                  initializer=tf.random_uniform_initializer(minval=0,maxval=0.01))
+                                                  initializer=tf.constant_initializer(random_normal))
+            print("word_embedding is:")
+            print(self.word_embedding.eval())
             # softmax weights and bias
             np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
@@ -116,7 +120,7 @@ class LSTM_Model(object):
 
             self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_W))
             self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_U))
-            print(lstm_W.eval())
+            print(self.lstm_W.eval())
             self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(0,dtype=tf.float32))
 
     def assign_lr(self, session, lr_value):
