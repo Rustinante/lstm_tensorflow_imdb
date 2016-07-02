@@ -61,6 +61,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from imdb import *
+from LSTM_Cell_with_Mask import *
 
 GPU_ID=1
 dim_proj=128
@@ -106,7 +107,9 @@ class LSTM_Model(object):
         #number of LSTM units, in this case it is dim_proj=128
         self.size = config.hidden_size
         #one LSTM cell with 128 units
+
         self.cell = tf.nn.rnn_cell.BasicLSTMCell(self.size, forget_bias=0.0)
+
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         '''
@@ -130,9 +133,9 @@ class LSTM_Model(object):
 
     def create_variables(self, embedded_inputs):
         print("creating variables")
-        self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
-        self.batch_size = batch_size = config.batch_size
-        self.num_steps = num_steps = config.num_steps
+        #self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
+        batch_size = config.batch_size
+        num_steps = config.num_steps
         self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
@@ -151,29 +154,42 @@ class LSTM_Model(object):
         # outputs, state = rnn.rnn(cell, inputs, initial_state=self._initial_state)
 
         self.outputs = []
-        state = self._initial_state
+
         print("in create_variables")
-        for time_step in range(num_steps):
-            if time_step > 0:
+        #for time_step in range(num_steps):
+        #    if time_step > 0:
+        #        tf.get_variable_scope().reuse_variables()
+        self.h=tf.zeros([batch_size,dim_proj])
+        self.c=tf.zeros([batch_size,dim_proj])
+        for t in range(num_steps):
+            if t > 0:
                 tf.get_variable_scope().reuse_variables()
-            (cell_output, state) = self.cell(embedded_inputs[time_step, :, :], state)
+            self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
+                                  tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1]),
+                                  self.h, self.c)
+            self.outputs.append(self.h)
 
-            self.outputs.append(cell_output)
+            #(cell_output, state) = self.cell(embedded_inputs[time_step, :, :], state)
 
-        self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, dim_proj])
+        self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2) # (n_samples x dim_proj)
+        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+        pool_mean = tf.div(self.outputs,tiled_num_words_in_each_sentence)
         #self.outputs now has dim (num_steps * batch_size x dim_proj)
         #each small block of the matrix is a sentence's transformed output
 
         # mean pooling
         # accumulate along each sentence
+        '''
         print("mean pooling starts")
         segment_IDs = np.arange(batch_size).repeat(num_steps)
         pool_sum = tf.segment_sum(self.outputs, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean = tf.mul(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
+        pool_mean = tf.div(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
         print("mean pooling finished")
+        '''
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
 
@@ -188,7 +204,7 @@ class LSTM_Model(object):
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
         print("finished computing the cost")
-        self._final_state = state
+
         self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
 
         print("finished creating variables")
@@ -256,7 +272,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             print("training accuracy is: %f" %accuracy)
             print(m.softmax_b.eval(session))
             '''
-            if verbose and mini_batch_number % 10 == 0 and counter is not 1:
+            if verbose and mini_batch_number % 10 == 0 and counter  is not 1:
                 print("VALIDATING ACCURACY\n")
                 print("%.3f perplexity: %.3f speed: %.0f wps" %
                     (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
@@ -298,7 +314,7 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=50,sort_by_len=False)
+    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=50)
     session=tf.Session()
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
