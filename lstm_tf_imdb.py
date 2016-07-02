@@ -217,8 +217,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
-        print("x is:")
-        print(_x)
+        #print("x is:")
+        #print(_x)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         config.num_steps = maxlen
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
@@ -286,8 +286,9 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
 
 def main():
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=100)
+    print("first to data:")
     print(train_data[0][0],train_data[0][1])
-    session=tf.Session(config=tf.ConfigProto(log_device_placement=True))
+    session=tf.Session()
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
         initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
