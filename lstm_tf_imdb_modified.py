@@ -153,7 +153,7 @@ class LSTM_Model(object):
             self.h = np.zeros([n_samples, dim_proj])
             self.c = np.zeros([n_samples, dim_proj])
         self.h, self.c = LSTM_Cell_with_Mask.step(
-            tf.slice(self._mask, [t, 0], [1, -1]), tf.matmul(tf.squeeze(embedded_inputs_slice), self.lstm_W) + self.lstm_b,
+            tf.slice(self._mask, [t, 0], [1, -1]), tf.matmul(tf.squeeze(embedded_inputs_slice), self.lstm_W) ,
             self.h, self.c)
         self.outputs.append(tf.expand_dims(self.h, -1))
         return t + 1
