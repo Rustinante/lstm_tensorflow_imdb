@@ -5,7 +5,7 @@ import six.moves.cPickle as pickle
 import gzip
 import os
 
-import numpy
+import numpy as np
 
 
 def prepare_data(seqs, labels, maxlen=None):
@@ -41,11 +41,11 @@ def prepare_data(seqs, labels, maxlen=None):
     
     
     n_samples = len(seqs)
-    maxlen = numpy.max(lengths)
+    maxlen = np.max(lengths)
     
     # columns are the samples in R^maxlen
-    x = numpy.zeros((maxlen, n_samples)).astype('int64')
-    x_mask = numpy.zeros((maxlen, n_samples)).astype(numpy.float32)
+    x = np.zeros((maxlen, n_samples)).astype('int64')
+    x_mask = np.zeros((maxlen, n_samples)).astype(np.float32)
     for idx, s in enumerate(seqs):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
@@ -57,7 +57,15 @@ def prepare_data(seqs, labels, maxlen=None):
     return x, x_mask, labels, maxlen
 
 def binary_one_hot(x):
-    dim0=x.shape[0]
+    try:
+        if type(x).__module__==np.__name__:
+            dim0=x.shape[0]
+        elif isinstance(x,list):
+            dim0=len(x)
+        break
+    except TypeError:
+        print("Expecting input type to be one of {list, numpy.ndarray}. Received %s" %type(x))
+
     dim1=2
     output=np.zeros((dim0,dim1))
     for i in range(dim0):
@@ -152,8 +160,8 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     train_set_x, train_set_y = train_set
     #n_samples is the number of datapoints in train_set_x
     n_samples = len(train_set_x)
-    sidx = numpy.random.permutation(n_samples)
-    n_train = int(numpy.round(n_samples * (1. - validation_portion)))
+    sidx = np.random.permutation(n_samples)
+    n_train = int(np.round(n_samples * (1. - validation_portion)))
     valid_set_x = [train_set_x[s] for s in sidx[n_train:]]
     valid_set_y = [train_set_y[s] for s in sidx[n_train:]]
     train_set_x = [train_set_x[s] for s in sidx[:n_train]]
