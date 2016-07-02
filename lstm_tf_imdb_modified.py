@@ -116,10 +116,11 @@ class LSTM_Model(object):
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj)], axis=1)
+            lstm_b = np.zeros((4 * options['dim_proj'],))
 
             self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_W))
             self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_U))
-            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(0,dtype=tf.float32))
+            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(lstm_b))
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
