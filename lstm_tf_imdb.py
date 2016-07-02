@@ -108,7 +108,7 @@ class LSTM_Model(object):
         #self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
         batch_size = config.batch_size
         num_steps = config.num_steps
-        self._targets = tf.placeholder(tf.float32, [batch_size],name='targets')
+        self._targets = tf.placeholder(tf.float32, [batch_size, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
         # if is_training and config.keep_prob < 1:
@@ -163,12 +163,8 @@ class LSTM_Model(object):
         offset = 1e-8
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
 
-        on_value=float(1)
-        off_value=float(0)
-        one_hot_targets = tf.one_hot(self._targets, 2, on_value=on_value, off_value=off_value, axis=1)
         print("computing the cost")
-        self._cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self.softmax_probabilities + offset) * one_hot_targets,
-                            reduction_indices=1))
+        self._cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self._targets * self.softmax_probabilities + offset), reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, self._targets)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
