@@ -80,7 +80,7 @@ def init_params(options):
     # embedding
     randn = numpy.random.rand(options['n_words'], options['dim_proj'])
     params['Wemb'] = (0.01 * randn).astype(config.floatX)
-    params = get_layer(options['encoder'])[0](options, params, prefix=options['encoder'])
+    params = param_init_lstm(options, params, prefix=options['encoder'])
     # classifier
     params['U'] = 0.01 * numpy.random.randn(options['dim_proj'],
                                             options['ydim']).astype(config.floatX)
@@ -106,9 +106,6 @@ def init_tparams(params):
     return tparams
 
 
-def get_layer(name):
-    fns = layers[name]
-    return fns
 
 
 def ortho_weight(ndim):
@@ -142,7 +139,7 @@ def param_init_lstm(options, params, prefix='lstm'):
 
 # ff: Feed Forward (normal neural net), only useful to put after lstm
 #     before the classifier.
-layers = {'lstm': (param_init_lstm, lstm_layer)}
+
 
 
 def sgd(lr, tparams, grads, x, mask, y, cost):
