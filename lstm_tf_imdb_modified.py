@@ -37,7 +37,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from imdb import *
-from LSTM_Cell_with_Mask import *
+import LSTM_Cell_with_Mask
 
 np.random.seed(123)
 
@@ -82,13 +82,9 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
+        self._embedded_inputs = tf.placeholder(tf.float32,[None,128],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-        '''
-        if is_training and config.keep_prob < 1:
-            lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
-                lstm_cell, output_keep_prob=config.keep_prob)
-        '''
 
         def ortho_weight(ndim):
             np.random.seed(123)
@@ -100,29 +96,68 @@ class LSTM_Model(object):
             # initialize a word_embedding scheme out of random
             np.random.seed(123)
             random_normal = 0.01 * np.random.rand(10000, dim_proj)
-            self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
+            self.word_embedding = tf.get_variable('word_embedding', shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.constant_initializer(random_normal))
             print("word_embedding is:")
             # softmax weights and bias
             np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
-            self.softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32, initializer=tf.constant_initializer(softmax_w))
-            self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32, initializer=tf.constant_initializer(0, tf.float32))
+            self.softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
+                                             initializer=tf.constant_initializer(softmax_w))
+            self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
+                                             initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
             lstm_W = np.concatenate([ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj)], axis=1)
 
-            lstm_U= np.concatenate([ortho_weight(dim_proj),
+            lstm_U = np.concatenate([ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj)], axis=1)
             lstm_b = np.zeros((4 * 128,))
 
-            self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_W))
-            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_U))
-            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(lstm_b))
+            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],
+                                          initializer=tf.constant_initializer(lstm_W))
+            self.lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],
+                                          initializer=tf.constant_initializer(lstm_U))
+            self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], initializer=tf.constant_initializer(lstm_b))
+
+        self.outputs = []
+
+        def dummy_wrapper(self, t, embedded_inputs_slice):
+            n_samples = tf.shape(embedded_inputs_slice)[0]
+            if t == 0:
+                self.h = np.zeros([n_samples, dim_proj])
+                self.c = np.zeros([n_samples, dim_proj])
+            self.h, self.c = LSTM_Cell_with_Mask.step(
+                tf.slice(self._mask, [t, 0], [1, -1]), tf.matmul(embedded_inputs_slice, self.lstm_W) + self.lstm_b,
+                self.h, self.c)
+            self.outputs.append(tf.expand_dims(self.h, -1))
+            return t+1
+
+        _ = tf.scan(self.dummy_wrapper, embedded_inputs, initializer=0)
+        self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2)  # (n_samples x dim_proj)
+
+        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+
+        pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
+        # self.outputs now has dim (num_steps * batch_size x dim_proj)
+
+        offset = 1e-8
+        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
+
+        print("computing the cost")
+        self._cost = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(self.softmax_probabilities), reduction_indices=1))
+        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
+        '''
+        if is_training and config.keep_prob < 1:
+            lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
+                lstm_cell, output_keep_prob=config.keep_prob)
+        '''
+
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
@@ -148,27 +183,7 @@ class LSTM_Model(object):
         #           for input_ in tf.split(1, num_steps, inputs)]
         # outputs, state = rnn.rnn(cell, inputs, initial_state=self._initial_state)
 
-        self.outputs = []
 
-        print("in create_variables")
-        #for time_step in range(num_steps):
-        #    if time_step > 0:
-        #        tf.get_variable_scope().reuse_variables()
-        self.h=tf.zeros([batch_size,dim_proj])
-        self.c=tf.zeros([batch_size,dim_proj])
-        for t in range(num_steps):
-            self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
-                                  tf.matmul(tf.squeeze(tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1])),self.lstm_W)+self.lstm_b,
-                                  self.h, self.c)
-            self.outputs.append(tf.expand_dims(self.h,-1))
-
-            #(cell_output, state) = self.cell(embedded_inputs[time_step, :, :], state)
-
-        self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2) # (n_samples x dim_proj)
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean = tf.div(self.outputs,tiled_num_words_in_each_sentence)
-        #self.outputs now has dim (num_steps * batch_size x dim_proj)
         #each small block of the matrix is a sentence's transformed output
 
         # mean pooling
@@ -183,20 +198,11 @@ class LSTM_Model(object):
         pool_mean = tf.div(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
         print("mean pooling finished")
         '''
-        offset = 1e-8
-        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
 
-        print("computing the cost")
-        self._cost = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log( self.softmax_probabilities ), reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets,1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
-        print("finished computing the cost")
-
-        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
-
-        print("finished creating variables")
 
     @property
     def input_data(self):
