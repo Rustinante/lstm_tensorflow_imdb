@@ -125,7 +125,7 @@ class LSTM_Model(object):
             self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], initializer=tf.constant_initializer(lstm_b))
 
         self.outputs = []
-        
+
         @property
         def dummy_wrapper(self, t, embedded_inputs_slice):
             n_samples = tf.shape(embedded_inputs_slice)[0]
