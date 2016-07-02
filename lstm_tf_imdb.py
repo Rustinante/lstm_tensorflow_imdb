@@ -167,7 +167,7 @@ class LSTM_Model(object):
         self.c=tf.zeros([batch_size,dim_proj])
         for t in range(num_steps):
             self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
-                                  tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1]),
+                                  tf.matmul(tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1]),self.lstm_W)+self.lstm_b,
                                   self.h, self.c)
             self.outputs.append(self.h)
 
@@ -257,7 +257,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         config.num_steps = maxlen
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
-        embedded_inputs = tf.matmul(embedded_inputs, m.lstm_W) + m.lstm_b
+
         print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
         print("Created variables %d th time!!! " % mini_batch_number)
