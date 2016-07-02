@@ -8,7 +8,6 @@ import os
 import numpy
 
 
-
 def prepare_data(seqs, labels, maxlen=None):
     """Create the matrices from the datasets.
 
@@ -51,7 +50,20 @@ def prepare_data(seqs, labels, maxlen=None):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
 
+    #return the labels as one hot
+
+    labels=binary_one_hot(labels)
+
     return x, x_mask, labels, maxlen
+
+def binary_one_hot(x):
+    dim0=x.shape[0]
+    dim1=2
+    output=np.zeros((dim0,dim1))
+    for i in range(dim0):
+        output[i,x[i]]=1
+    return output
+
 
 
 def get_dataset_file(dataset, default_dataset, origin):
