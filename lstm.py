@@ -72,7 +72,7 @@ def create_tf_model_parameters():
                              orthonormal_weights(dim_proj),
                              orthonormal_weights(dim_proj),
                              orthonormal_weights(dim_proj)], axis=1)
-    lstm_b = np.zeros((4 * dim_proj,))
+    lstm_b = np.zeros(dim_proj)
     # embedding
     word_embedding = (0.01 * np.random.rand(n_words, dim_proj)).astype('float32')
     return (tf.Variable(lstm_W,name='lstm_W'), tf.Variable(lstm_U,name='lstm_U'),
@@ -158,7 +158,7 @@ def main():
         training_index = get_random_minibatches_index(total_num_training_data, BATCH_SIZE)
         x = [train[0][i] for i in training_index]
         labels = [train[1][i] for i in training_index]
-        x, mask, labels = prepare_data(x, labels)
+        x, mask, labels, maxlen = prepare_data(x, labels)
 
         maxlen = x.shape[0]
         n_samples   = x.shape[1]
