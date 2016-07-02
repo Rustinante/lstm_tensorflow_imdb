@@ -270,7 +270,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                                       m._mask: mask})
             print("adding cost to costs the cost")
             costs += cost
-            iters += m.num_steps
+            iters += maxlen
             print("training accuracy is: %f" %accuracy)
             print(m.softmax_b.eval(session))
             '''
