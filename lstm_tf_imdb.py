@@ -259,7 +259,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
 
         print("Creating variables %d th time " %mini_batch_number)
-        with tf.device("/gpu:0")
+        with tf.device("/gpu:0"):
             m.create_variables(embedded_inputs)
         print("Created variables %d th time!!! " % mini_batch_number)
         print("Initializing all variables %d th time " % mini_batch_number)
