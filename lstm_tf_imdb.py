@@ -67,7 +67,7 @@ class Options(object):
     num_layers = 2
     num_steps = None
     hidden_size = 128
-    max_max_epoch = 5
+    max_max_epoch = 5000
     keep_prob = 1
     lr_decay = 1
     batch_size = BATCH_SIZE
@@ -254,7 +254,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
                                          {m.targets: labels_mini,
                                           m._mask: mask})
             costs += cost
-            iters += m.num_steps
+            iters += maxlen
 
             print("validation/test accuracy is: %f" %accuracy)
 
