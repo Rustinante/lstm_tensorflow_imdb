@@ -96,7 +96,7 @@ class LSTM_Model(object):
 
         with tf.variable_scope("RNN"):
             # initialize a word_embedding scheme out of random
-            seed(123)
+            np.random.seed(123)
             random_normal = 0.01 * np.random.rand(10000, dim_proj)
             self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.constant_initializer(random_normal))
