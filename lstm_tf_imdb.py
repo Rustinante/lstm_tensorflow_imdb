@@ -128,8 +128,8 @@ class LSTM_Model(object):
             self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
-            self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal(stddev=0.01))
-            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal(stddev=0.01))
+            self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
+            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
             self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj], initializer=tf.constant_initializer(0,dtype=tf.float32))
 
     def assign_lr(self, session, lr_value):
