@@ -126,7 +126,7 @@ class LSTM_Model(object):
 
         self.outputs = []
 
-        @property
+        @classmethod
         def dummy_wrapper(self, t, embedded_inputs_slice):
             n_samples = tf.shape(embedded_inputs_slice)[0]
             if t == 0:
