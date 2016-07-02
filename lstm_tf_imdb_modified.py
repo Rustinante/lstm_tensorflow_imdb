@@ -300,6 +300,10 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             iters += maxlen
 
             print("validation/test accuracy is: %f" %accuracy)
+            
+        move_on = int(raw_input("moving on? 1/0"))
+        if move_on == 0:
+            break
 
     return np.exp(costs / iters)
 
