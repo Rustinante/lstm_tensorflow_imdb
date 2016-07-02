@@ -126,18 +126,6 @@ class LSTM_Model(object):
 
         self.outputs = []
 
-        @classmethod
-        def dummy_wrapper(self, t, embedded_inputs_slice):
-            n_samples = tf.shape(embedded_inputs_slice)[0]
-            if t == 0:
-                self.h = np.zeros([n_samples, dim_proj])
-                self.c = np.zeros([n_samples, dim_proj])
-            self.h, self.c = LSTM_Cell_with_Mask.step(
-                tf.slice(self._mask, [t, 0], [1, -1]), tf.matmul(embedded_inputs_slice, self.lstm_W) + self.lstm_b,
-                self.h, self.c)
-            self.outputs.append(tf.expand_dims(self.h, -1))
-            return t+1
-
         _ = tf.scan(self.dummy_wrapper, self._embedded_inputs, initializer=0)
         self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2)  # (n_samples x dim_proj)
 
@@ -159,6 +147,16 @@ class LSTM_Model(object):
                 lstm_cell, output_keep_prob=config.keep_prob)
         '''
 
+    def dummy_wrapper(self, t, embedded_inputs_slice):
+        n_samples = tf.shape(embedded_inputs_slice)[0]
+        if t == 0:
+            self.h = np.zeros([n_samples, dim_proj])
+            self.c = np.zeros([n_samples, dim_proj])
+        self.h, self.c = LSTM_Cell_with_Mask.step(
+            tf.slice(self._mask, [t, 0], [1, -1]), tf.matmul(embedded_inputs_slice, self.lstm_W) + self.lstm_b,
+            self.h, self.c)
+        self.outputs.append(tf.expand_dims(self.h, -1))
+        return t + 1
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
