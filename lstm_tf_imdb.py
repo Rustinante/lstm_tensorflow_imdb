@@ -286,6 +286,7 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
 
 def main():
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=100)
+    print(train_data[0][0],train_data[0][1])
     session=tf.Session(config=tf.ConfigProto(log_device_placement=True))
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():

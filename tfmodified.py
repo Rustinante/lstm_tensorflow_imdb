@@ -450,8 +450,8 @@ def train_lstm(
     load_data, prepare_data = get_dataset(dataset)
 
     print('Loading data')
-    train, valid, test = load_data(n_words=n_words, validation_portion=0.05, maxlen=maxlen)
-
+    train, valid, test = load_data(n_words=n_words, validation_portion=0.05, maxlen=100)
+    print(train_data[0][0], train_data[0][1])
     model_options['ydim'] = 2
 
     print('Building model')
