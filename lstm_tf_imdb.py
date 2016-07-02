@@ -230,7 +230,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         session.run(tf.initialize_all_variables())
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
+            with tf.device("/gpu:0"):
+                cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
                                      {m._targets: labels_mini,
                                       m._mask: mask})
             print("adding cost to costs the cost")
