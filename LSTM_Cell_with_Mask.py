@@ -7,7 +7,7 @@ def slice(x, n, dim):
     return x[:, n * dim : (n + 1) * dim]
 
 def step(mask, input , h_previous, cell_previous):
-    with tf.variable_scope("RNN",reuse=True)
+    with tf.variable_scope("RNN",reuse=True):
         lstm_U = tf.get_variable("lstm_U")
     preactivation = tf.matmul(h_previous, lstm_U)
     preactivation = preactivation + input
