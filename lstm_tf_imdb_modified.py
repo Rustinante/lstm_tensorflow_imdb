@@ -67,7 +67,7 @@ class Options(object):
     learning_rate = 0.0001
     max_grad_norm = 5
     num_layers = 2
-    num_steps = None
+
     hidden_size = 128
     max_max_epoch = 5000
     keep_prob = 1
@@ -85,7 +85,8 @@ class LSTM_Model(object):
         self._embedded_inputs = tf.placeholder(tf.float32,[None,None,128],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-
+        self.h = tf.placeholder(tf.float32, [None,128])
+        self.c = tf.placeholder(tf.float32, [None,128])
         def ortho_weight(ndim):
             np.random.seed(123)
             W = np.random.randn(ndim, ndim)
@@ -125,8 +126,7 @@ class LSTM_Model(object):
             self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], initializer=tf.constant_initializer(lstm_b))
 
         self.outputs = []
-        self.h=None
-        self.c=None
+
         _ = tf.scan(self.dummy_wrapper, self._embedded_inputs, initializer=0)
         self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2)  # (n_samples x dim_proj)
 
@@ -147,6 +147,9 @@ class LSTM_Model(object):
             lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
                 lstm_cell, output_keep_prob=config.keep_prob)
         '''
+        self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
+        self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
     def dummy_wrapper(self, t, embedded_inputs_slice):
         n_samples = tf.shape(embedded_inputs_slice)[0]
@@ -163,46 +166,8 @@ class LSTM_Model(object):
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
 
-    def create_variables(self, embedded_inputs):
-        print("creating variables")
-        #self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
-        batch_size = config.batch_size
-        num_steps = config.num_steps
 
 
-        # if is_training and config.keep_prob < 1:
-        # inputs = tf.nn.dropout(inputs, config.keep_prob)
-
-        # Simplified version of tensorflow.models.rnn.rnn.py's rnn().
-        # This builds an unrolled LSTM for tutorial purposes only.
-        # In general, use the rnn() or state_saving_rnn() from rnn.py.
-        #
-        # The alternative version of the code below is:
-        #
-        # from tensorflow.models.rnn import rnn
-        # inputs = [tf.squeeze(input_, [1])
-        #           for input_ in tf.split(1, num_steps, inputs)]
-        # outputs, state = rnn.rnn(cell, inputs, initial_state=self._initial_state)
-
-
-        #each small block of the matrix is a sentence's transformed output
-
-        # mean pooling
-        # accumulate along each sentence
-        '''
-        print("mean pooling starts")
-        segment_IDs = np.arange(batch_size).repeat(num_steps)
-        pool_sum = tf.segment_sum(self.outputs, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
-
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean = tf.div(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
-        print("mean pooling finished")
-        '''
-
-        self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
-        self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets,1))
-        self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
     def _slice(x, n, dim):
         '''
@@ -277,16 +242,8 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print("x is:")
         print(_x)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
-        config.num_steps = maxlen
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
 
-        print("Creating variables %d th time " %mini_batch_number)
-        #with tf.device("/gpu:0"):
-        m.create_variables(embedded_inputs)
-        '''
-        print("Created variables %d th time!!! " % mini_batch_number)
-        print("Initializing all variables %d th time " % mini_batch_number)
-        '''
         session.run(tf.initialize_all_variables())
         print("word embedding is:")
         print(m.word_embedding.eval())
@@ -306,12 +263,16 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print ("mask is ")
         print(mask)
         #print("Initialized all variables %d th time!!! " % mini_batch_number)
+        n_samples = x_mini.shape[0]
+        h_0 = np.zeros([n_samples,dim_proj])
+        c_0 = np.zeros([n_samples,dim_proj])
         if is_training is True:
-            #with tf.device("/gpu:0"):
             cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
-                                     {m._targets: labels_mini,
-                                      m._mask: mask})
-            #print("adding cost to costs the cost")
+                                            {m._embedded_inputs : embedded_inputs,
+                                             m._targets: labels_mini,
+                                             m._mask: mask,
+                                             m.h : h_0,
+                                             m.c : c_0})
             costs += cost
             iters += maxlen
             print("training accuracy is: %f" %accuracy)
