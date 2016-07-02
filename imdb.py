@@ -62,7 +62,8 @@ def binary_one_hot(x):
             dim0=x.shape[0]
         elif isinstance(x,list):
             dim0=len(x)
-        break
+        else:
+            raise TypeError
     except TypeError:
         print("Expecting input type to be one of {list, numpy.ndarray}. Received %s" %type(x))
 
