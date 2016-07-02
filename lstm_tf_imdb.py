@@ -108,7 +108,7 @@ class LSTM_Model(object):
         #self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
         batch_size = config.batch_size
         num_steps = config.num_steps
-        self._targets = tf.placeholder(tf.int64, [batch_size],name='targets')
+        self._targets = tf.placeholder(tf.float32, [batch_size],name='targets')
         self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
 
         # if is_training and config.keep_prob < 1:
