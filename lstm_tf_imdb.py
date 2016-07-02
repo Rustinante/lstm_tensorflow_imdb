@@ -164,7 +164,7 @@ class LSTM_Model(object):
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
 
         print("computing the cost")
-        self._cost = tf.reduce_sum(-tf.reduce_sum(self._targets * tf.log( self.softmax_probabilities ), reduction_indices=1))
+        self._cost = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log( self.softmax_probabilities ), reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets,1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
@@ -282,7 +282,7 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=50)
+    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=100)
     session=tf.Session(config=tf.ConfigProto(log_device_placement=True))
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
