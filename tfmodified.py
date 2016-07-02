@@ -40,8 +40,7 @@ def get_minibatches_idx(n, minibatch_size, shuffle=False):
     return zip(range(len(minibatches)), minibatches)
 
 
-def get_dataset(name):
-    return datasets[name][0], datasets[name][1]
+
 
 
 def zipp(params, tparams):
@@ -447,7 +446,8 @@ def train_lstm(
     model_options = locals().copy()
     print("model options", model_options)
 
-    load_data, prepare_data = get_dataset(dataset)
+    load_data=imdb.load_data
+    prepare_data = imdb.prepare_data
 
     print('Loading data')
     train, valid, test = load_data(n_words=n_words, validation_portion=0.05, maxlen=100)
