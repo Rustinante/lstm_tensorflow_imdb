@@ -125,7 +125,8 @@ class LSTM_Model(object):
             self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], initializer=tf.constant_initializer(lstm_b))
 
         self.outputs = []
-
+        
+        @property
         def dummy_wrapper(self, t, embedded_inputs_slice):
             n_samples = tf.shape(embedded_inputs_slice)[0]
             if t == 0:
@@ -137,7 +138,7 @@ class LSTM_Model(object):
             self.outputs.append(tf.expand_dims(self.h, -1))
             return t+1
 
-        _ = tf.scan(dummy_wrapper, self._embedded_inputs, initializer=0)
+        _ = tf.scan(self.dummy_wrapper, self._embedded_inputs, initializer=0)
         self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2)  # (n_samples x dim_proj)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
