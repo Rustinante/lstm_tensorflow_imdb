@@ -84,7 +84,7 @@ class LSTM_Model(object):
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         self._embedded_inputs = tf.placeholder(tf.float32,[None,128],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
-        self._mask = tf.placeholder(tf.float32, [None, 128],name='mask')
+        self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
         def ortho_weight(ndim):
             np.random.seed(123)
@@ -152,6 +152,7 @@ class LSTM_Model(object):
         if t == 0:
             self.h = np.zeros([n_samples, dim_proj])
             self.c = np.zeros([n_samples, dim_proj])
+        print(self._mask.type)
         slice_temp=tf.slice(self._mask, [t, 0], [1, -1])
         self.h, self.c = LSTM_Cell_with_Mask.step(
             slice_temp, tf.matmul(tf.squeeze(embedded_inputs_slice), self.lstm_W) + self.lstm_b,
