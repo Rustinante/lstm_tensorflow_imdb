@@ -164,7 +164,7 @@ class LSTM_Model(object):
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
 
         print("computing the cost")
-        self._cost = -tf.reduce_mean(tf.reduce_sum(tf.log(self._targets * self.softmax_probabilities + offset), reduction_indices=1))
+        self._cost = tf.reduce_mean(-tf.reduce_sum(tf.log(self._targets * self.softmax_probabilities + offset), reduction_indices=1))
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets,1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
