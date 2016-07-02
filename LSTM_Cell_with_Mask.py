@@ -20,10 +20,10 @@ def step(mask, input , h_previous, cell_previous):
     input_pressure = tf.tanh(slice(preactivation, 3, dim_proj))
 
     cell_state = forget_valve * cell_previous + input_valve * input_pressure
-    cell_state = mask[:, None] * cell_state + (1. - mask)[:, None] * cell_previous
+    cell_state = tf.tile(mask,[1,dim_proj]) * cell_state + tf.tile((1. - mask),[1,dim_proj]) * cell_previous
 
     h = output_valve * tf.tanh(cell_state)
-    h = mask[:, None] * h + (1. - mask)[:, None] * h_previous
+    h = tf.tile(mask,[1,dim_proj]) * h + tf.tile(mask,[1,dim_proj])* h_previous
 
     return h, cell_state
 
