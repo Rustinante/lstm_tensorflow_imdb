@@ -6,7 +6,7 @@ import gzip
 import os
 
 import numpy as np
-
+np.random.seed(123)
 
 def prepare_data(seqs, labels, maxlen=None):
     """Create the matrices from the datasets.
