@@ -15,8 +15,7 @@ import imdb
 
 datasets = {'imdb': (imdb.load_data, imdb.prepare_data)}
 # Set the random number generators' seeds for consistency
-SEED = 123
-numpy.random.seed(SEED)
+numpy.random.seed(123)
 
 def numpy_floatX(data):
     return numpy.asarray(data, dtype=config.floatX)
@@ -451,7 +450,6 @@ def train_lstm(
 
     print('Loading data')
     train, valid, test = load_data(n_words=n_words, validation_portion=0.05, maxlen=100)
-    print(train[0][0], train[0][1])
     model_options['ydim'] = 2
 
     print('Building model')
@@ -525,6 +523,16 @@ def train_lstm(
 
                 cost = f_grad_shared(x, mask, y)
                 f_update(lrate)
+                print("lstm_W")
+                print(tparams['lstm_W'])
+                print("lstm_b")
+                print(tparams['lstm_b'])
+                print("lstm_U")
+                print(tparams['lstm_U'])
+
+                move_on = int(raw_input("moving on? 1/0"))
+                if move_on==False:
+                    break
 
 
                 if numpy.mod(uidx, dispFreq) == 0:
