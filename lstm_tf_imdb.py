@@ -118,7 +118,7 @@ class LSTM_Model(object):
                 lstm_cell, output_keep_prob=config.keep_prob)
         '''
 
-        with tf.variable_scope("RNN"):
+        with tf.variable_scope("RNN"), tf.device("/gpu:0"):
             # initialize a word_embedding scheme out of random
             self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.random_uniform_initializer(minval=0,maxval=0.01))
