@@ -169,7 +169,7 @@ class LSTM_Model(object):
             self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
                                   tf.matmul(tf.squeeze(tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1])),self.lstm_W),
                                   self.h, self.c)
-            self.outputs.append(self.h)
+            self.outputs.append(tf.expand_dims(self.h,-1))
 
             #(cell_output, state) = self.cell(embedded_inputs[time_step, :, :], state)
 
