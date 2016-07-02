@@ -255,7 +255,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print("word embedding is:")
         print(m.word_embedding.eval())
         print("embedded_inputs is:")
-        print(tf.reshape(embedded_inputs,[-1]))
+        print(tf.reshape(embedded_inputs,[-1]).eval())
         #print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
             #with tf.device("/gpu:0"):
