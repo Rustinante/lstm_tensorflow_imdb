@@ -88,6 +88,12 @@ class LSTM_Model(object):
                 lstm_cell, output_keep_prob=config.keep_prob)
         '''
 
+        def ortho_weight(ndim):
+            numpy.random.seed(123)
+            W = np.random.randn(ndim, ndim)
+            u, s, v = np.linalg.svd(W)
+            return u.astype(np.float32)
+
         with tf.variable_scope("RNN"):
             # initialize a word_embedding scheme out of random
             self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
@@ -98,9 +104,18 @@ class LSTM_Model(object):
             self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
-            lstm_W = np.random.rand(10000, 128)
+            lstm_W = np.concatenate([ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj)], axis=1)
+
+            lstm_U= np.concatenate([ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj)], axis=1)
+
             self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_W))
-            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
+            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.constant_initializer(lstm_U))
             self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(0,dtype=tf.float32))
 
     def assign_lr(self, session, lr_value):
