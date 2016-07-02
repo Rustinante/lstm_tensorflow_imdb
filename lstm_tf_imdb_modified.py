@@ -125,7 +125,8 @@ class LSTM_Model(object):
             self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], initializer=tf.constant_initializer(lstm_b))
 
         self.outputs = []
-
+        self.h=None
+        self.c=None
         _ = tf.scan(self.dummy_wrapper, self._embedded_inputs, initializer=0)
         self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2)  # (n_samples x dim_proj)
 
