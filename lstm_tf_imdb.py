@@ -127,6 +127,10 @@ class LSTM_Model(object):
                                              initializer=tf.random_normal_initializer(0, 0.1))
             self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
+            # cell weights and bias
+            self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal(stddev=0.01))
+            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal(stddev=0.01))
+            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj], initializer=tf.constant_initializer(0,dtype=tf.float32))
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
@@ -162,8 +166,6 @@ class LSTM_Model(object):
         self.h=tf.zeros([batch_size,dim_proj])
         self.c=tf.zeros([batch_size,dim_proj])
         for t in range(num_steps):
-            if t > 0:
-                tf.get_variable_scope().reuse_variables()
             self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
                                   tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1]),
                                   self.h, self.c)
@@ -255,7 +257,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         config.num_steps = maxlen
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
-
+        embedded_inputs = tf.matmul(embedded_inputs, m.lstm_W) + m.lstm_b
         print("Creating variables %d th time " %mini_batch_number)
         m.create_variables(embedded_inputs)
         print("Created variables %d th time!!! " % mini_batch_number)
@@ -263,7 +265,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         session.run(tf.initialize_all_variables())
         print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            cost, _, accuracy = session.run([m.cost, m._train_op,m.accuracy],
+            cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
                                      {m._targets: labels_mini,
                                       m._mask: mask})
             print("adding cost to costs the cost")
