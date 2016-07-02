@@ -263,6 +263,13 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print(m.lstm_b.eval())
         print("lstm_U")
         print(m.lstm_U.eval())
+        print("after preparing data")
+        print("x is")
+        print(x_mini)
+        print("y is")
+        print(labels_mini)
+        print ("mask is ")
+        print(mask)
         #print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
             #with tf.device("/gpu:0"):
