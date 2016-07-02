@@ -519,7 +519,7 @@ def train_lstm(
                 # This swap the axis!
                 # Return something of shape (minibatch maxlen, n samples)
 
-                x, mask, y = prepare_data(x, y) # x is (maxlen x n_samples)
+                x, mask, y,maxlen = prepare_data(x, y) # x is (maxlen x n_samples)
                                                 # the rows of x are sentences
                 n_samples += x.shape[1]
 

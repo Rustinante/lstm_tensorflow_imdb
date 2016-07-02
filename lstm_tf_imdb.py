@@ -86,7 +86,7 @@ class LSTM_Model(object):
                 lstm_cell, output_keep_prob=config.keep_prob)
         '''
 
-        with tf.variable_scope("RNN") ,tf.device("/gpu:0"):
+        with tf.variable_scope("RNN"):
             # initialize a word_embedding scheme out of random
             self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.random_uniform_initializer(minval=0,maxval=0.01))
@@ -217,24 +217,27 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
-
+        print("x is:")
+        print(_x)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         config.num_steps = maxlen
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
 
         print("Creating variables %d th time " %mini_batch_number)
-        with tf.device("/gpu:0"):
-            m.create_variables(embedded_inputs)
+        #with tf.device("/gpu:0"):
+        m.create_variables(embedded_inputs)
+        '''
         print("Created variables %d th time!!! " % mini_batch_number)
         print("Initializing all variables %d th time " % mini_batch_number)
+        '''
         session.run(tf.initialize_all_variables())
-        print("Initialized all variables %d th time!!! " % mini_batch_number)
+        #print("Initialized all variables %d th time!!! " % mini_batch_number)
         if is_training is True:
-            with tf.device("/gpu:0"):
-                cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
+            #with tf.device("/gpu:0"):
+            cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
                                      {m._targets: labels_mini,
                                       m._mask: mask})
-            print("adding cost to costs the cost")
+            #print("adding cost to costs the cost")
             costs += cost
             iters += maxlen
             print("training accuracy is: %f" %accuracy)
