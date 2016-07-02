@@ -182,10 +182,10 @@ class LSTM_Model(object):
         preactivation = tf.matmul(h_previous, lstm_U)
         preactivation = preactivation + input
 
-        input_valve = tf.sigmoid(_slice(preactivation, 0, dim_proj))
-        forget_valve = tf.sigmoid(_slice(preactivation, 1, dim_proj))
-        output_valve = tf.sigmoid(_slice(preactivation, 2, dim_proj))
-        input_pressure = tf.tanh(_slice(preactivation, 3, dim_proj))
+        input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
+        forget_valve = tf.sigmoid(self._slice(preactivation, 1, dim_proj))
+        output_valve = tf.sigmoid(self._slice(preactivation, 2, dim_proj))
+        input_pressure = tf.tanh(self._slice(preactivation, 3, dim_proj))
 
         cell_state = forget_valve * cell_previous + input_valve * input_pressure
         cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
