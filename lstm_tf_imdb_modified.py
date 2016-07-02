@@ -92,7 +92,7 @@ class LSTM_Model(object):
             u, s, v = np.linalg.svd(W)
             return u.astype(np.float32)
 
-        with tf.variable_scope("RNN"):
+        with tf.variable_scope("RNN") as self.RNN_name_scope:
             # initialize a word_embedding scheme out of random
             np.random.seed(123)
             random_normal = 0.01 * np.random.rand(10000, dim_proj)
@@ -154,7 +154,7 @@ class LSTM_Model(object):
             self.h = np.zeros([n_samples, dim_proj])
             self.c = np.zeros([n_samples, dim_proj])
         slice_temp=tf.slice(self._mask, [t, 0], [1, -1])
-        self.h, self.c = LSTM_Cell_with_Mask.step(
+        self.h, self.c = self.step(
             slice_temp, tf.matmul(tf.squeeze(embedded_inputs_slice), self.lstm_W) + self.lstm_b,
             self.h, self.c)
         self.outputs.append(tf.expand_dims(self.h, -1))
@@ -204,6 +204,33 @@ class LSTM_Model(object):
         self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets,1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
 
+    def _slice(x, n, dim):
+        '''
+        if x.ndim == 3:
+            return x[:, :, n * dim : (n + 1) * dim]
+            '''
+        return x[:, n * dim: (n + 1) * dim]
+
+    def step(self, mask, input, h_previous, cell_previous):
+        with tf.variable_scope(self.RNN_name_scope, reuse=True):
+            lstm_U = tf.get_variable("lstm_U")
+        preactivation = tf.matmul(h_previous, lstm_U)
+        preactivation = preactivation + input
+
+        input_valve = tf.sigmoid(_slice(preactivation, 0, dim_proj))
+        forget_valve = tf.sigmoid(_slice(preactivation, 1, dim_proj))
+        output_valve = tf.sigmoid(_slice(preactivation, 2, dim_proj))
+        input_pressure = tf.tanh(_slice(preactivation, 3, dim_proj))
+
+        cell_state = forget_valve * cell_previous + input_valve * input_pressure
+        cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
+            tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
+
+        h = output_valve * tf.tanh(cell_state)
+        h = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * h + tf.tile(tf.reshape((1. - mask), [-1, 1]),
+                                                                            [1, dim_proj]) * h_previous
+
+        return h, cell_state
 
     @property
     def input_data(self):
