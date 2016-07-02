@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
+dim_proj=128
 def slice(x, n, dim):
     if x.ndim == 3:
         return x[:, :, n * dim : (n + 1) * dim]
