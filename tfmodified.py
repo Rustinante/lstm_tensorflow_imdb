@@ -212,7 +212,7 @@ def adadelta(lr, tparams, grads, x, mask, y, cost):
              for rg2, g in zip(running_grads2, grads)]
 
     f_grad_shared = theano.function([x, mask, y], cost, updates=zgup + rg2up,
-                                    name='adadelta_f_grad_shared')
+                                    name='adadelta_f_grad_shared',allow_input_downcast=True)
 
     updir = [-tensor.sqrt(ru2 + 1e-6) / tensor.sqrt(rg2 + 1e-6) * zg
              for zg, ru2, rg2 in zip(zipped_grads,
