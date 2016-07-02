@@ -89,7 +89,7 @@ class LSTM_Model(object):
         '''
 
         def ortho_weight(ndim):
-            numpy.random.seed(123)
+            np.random.seed(123)
             W = np.random.randn(ndim, ndim)
             u, s, v = np.linalg.svd(W)
             return u.astype(np.float32)
