@@ -39,6 +39,8 @@ import tensorflow as tf
 from imdb import *
 from LSTM_Cell_with_Mask import *
 
+np.random.seed(123)
+
 GPU_ID=1
 dim_proj=128
 vocabulary_size = 10000
@@ -286,8 +288,6 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
 
 def main():
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=100)
-    print("first to data:")
-    print(train_data[0][0],train_data[0][1])
     session=tf.Session()
     #with tf.Graph().as_default(), tf.Session() as session:
     with session.as_default():
