@@ -305,7 +305,7 @@ def words_to_embedding(word_embedding, word_matrix):
 
     unrolled_matrix = tf.reshape(word_matrix,[-1])
     dim0 = maxlen * n_samples
-    one_hot=np.zeros((dim0, vocabulary_size))
+    one_hot=np.zeros((dim0, vocabulary_size),dtype=np.float32)
     for i in range(dim0):
         one_hot[i, unrolled_matrix[i]] = 1
     '''
