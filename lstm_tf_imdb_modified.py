@@ -152,11 +152,10 @@ class LSTM_Model(object):
         print(tf.trainable_variables())
         print("computing the cost")
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
-        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self.cross_entropy)
-        opt = tf.train.AdadeltaOptimizer(learning_rate=self._lr)
+
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
-        self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
+        correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
         """
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
                                                                  self.lstm_W,
@@ -250,13 +249,13 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             costs += cost
             iters += maxlen
             print("training accuracy is: ", accuracy)
-
+            """
             counter+=1
             if counter%50==0:
                 move_on = int(raw_input("moving on? 1/0"))
                 if move_on == 0:
                     break
-
+            """
 
             '''
             if verbose and mini_batch_number % 10 == 0 and counter  is not 1:
