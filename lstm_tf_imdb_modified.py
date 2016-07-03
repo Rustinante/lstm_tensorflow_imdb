@@ -316,8 +316,8 @@ def main():
     session = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
     with session.as_default():
         m = LSTM_Model()
-        session.run(tf.initialize_all_variables())
         for i in range(config.max_max_epoch):
+            session.run(tf.initialize_all_variables())
             #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
             #m.assign_lr(session, config.learning_rate * lr_decay)
             m.assign_lr(session, config.learning_rate)
