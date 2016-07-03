@@ -247,7 +247,6 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             costs += cost
             iters += maxlen
             print("training accuracy is: ", accuracy)
-            print(m.softmax_b.eval(session))
 
             counter+=1
             if counter%50==0:
