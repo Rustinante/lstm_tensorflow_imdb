@@ -38,7 +38,7 @@ import numpy as np
 import tensorflow as tf
 from imdb import *
 
-MAXLEN=100
+
 np.random.seed(123)
 
 GPU_ID=1
@@ -82,7 +82,7 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-        self._embedded_inputs = tf.placeholder(tf.float32,[MAXLEN,16,128],name='embedded_inputs')
+        self._embedded_inputs = tf.placeholder(tf.float32,[None,None,128],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
         self.h = tf.placeholder(tf.float32, [None,128])
@@ -124,20 +124,8 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        n_samples = 16
-        self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
-        self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
-
-        for t in range(MAXLEN):
-            mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
-            inputs_slice = tf.squeeze(tf.slice(self._embedded_inputs,[t,0,0],[1,-1,-1]))
-            self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, self.lstm_W) + self.lstm_b,
-                                       self.h,
-                                       self.c)
-            self.h_outputs.append(tf.expand_dims(self.h, -1))
-
+        _ = tf.scan(self.dummy_wrapper, self._embedded_inputs, initializer=0,back_prop=True,parallel_iterations=1)
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
@@ -150,13 +138,13 @@ class LSTM_Model(object):
         self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
         print(tf.trainable_variables())
         print("computing the cost")
-        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(self.softmax_probabilities), reduction_indices=1))
-        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self.cross_entropy)
+        #self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(self.softmax_probabilities), reduction_indices=1))
+        #self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self.cross_entropy)
         opt = tf.train.AdadeltaOptimizer(learning_rate=self._lr)
         self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
-
+        '''
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
                                                                  self.lstm_W,
                                                                  self.lstm_U,
@@ -164,13 +152,24 @@ class LSTM_Model(object):
                                                                  self.softmax_w,
                                                                  self.softmax_b])
         self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
-        print("finished computing the cost")
+        '''
 
         '''
         if is_training and config.keep_prob < 1:
             lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
                 lstm_cell, output_keep_prob=config.keep_prob)
         '''
+    def dummy_wrapper(self, t, embedded_inputs_slice):
+        n_samples = tf.shape(embedded_inputs_slice)[0]
+        if t == 0:
+            self.h = np.zeros([n_samples, dim_proj])
+            self.c = np.zeros([n_samples, dim_proj])
+        slice_temp=tf.slice(self._mask, [t, 0], [1, -1])
+        self.h, self.c = self.step(
+            slice_temp, tf.matmul(tf.squeeze(embedded_inputs_slice), self.lstm_W) + self.lstm_b,
+            self.h, self.c)
+        self.h_outputs.append(tf.expand_dims(self.h, -1))
+        return t + 1
 
 
     def _slice(self, x, n, dim):
@@ -234,10 +233,10 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         counter+=1
         print("x is:")
         print(_x)
-        x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
-        # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
+        x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
-
+        print("embedded_inputs.name:")
+        print(embedded_inputs.name)
         print("m.word_embedding.name:")
         print(m.word_embedding.name)
         print("word embedding is:")
@@ -258,22 +257,31 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         print ("mask is ")
         print(mask)
 
+        n_samples = x_mini.shape[0]
+        h_0 = np.zeros([n_samples,dim_proj])
+        c_0 = np.zeros([n_samples,dim_proj])
         if is_training is True:
-            cost, accuracy, _ = session.run([m.cost ,m.accuracy,m.train_op],
+            '''
+            cost, _, accuracy = session.run([m.cost, m.train_op m.accuracy],
+                                            {m._embedded_inputs : embedded_inputs.eval(),
+                                             m._targets: labels_mini,
+                                             m._mask: mask,
+                                             m.h : h_0,
+                                             m.c : c_0})
+            '''
+            accuracy = session.run([ m.accuracy],
                                             {m._embedded_inputs: embedded_inputs.eval(),
                                              m._targets: labels_mini,
-                                             m._mask: mask})
+                                             m._mask: mask,
+                                             m.h: h_0,
+                                             m.c: c_0})
             costs += cost
             iters += maxlen
-            print("training accuracy is: ", accuracy)
+            print("training accuracy is: %f" %accuracy)
             print(m.softmax_b.eval(session))
-
-
-            #move_on = int(raw_input("moving on? 1/0"))
-            #if move_on == 0:
-            #    break
-
-
+            move_on = int(raw_input("moving on? 1/0"))
+            if move_on == 0:
+                break
             '''
             if verbose and mini_batch_number % 10 == 0 and counter  is not 1:
                 print("VALIDATING ACCURACY\n")
@@ -320,7 +328,7 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=MAXLEN)
+    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=100)
     #with tf.Graph().as_default(), tf.Session() as session:
     session=tf.Session()
 

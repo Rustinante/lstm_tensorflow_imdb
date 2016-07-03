@@ -6,9 +6,11 @@ import gzip
 import os
 
 import numpy as np
+
 np.random.seed(123)
 
-def prepare_data(seqs, labels, maxlen=None):
+
+def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
     """Create the matrices from the datasets.
 
     This pad each sequence to the same length: the length of the
@@ -20,7 +22,8 @@ def prepare_data(seqs, labels, maxlen=None):
     This swaps the axis!
     """
     # x: a list of sentences
-
+    if (maxlen is not None) and maxlen>MAXLEN_to_pad_to:
+        raise ValueError("maxlen should be less than MAXLEN_to_pad_to. maxlen = %d MAXLEN_to_pad_to = %d "%(maxlen,MAXLEN_to_pad_to))
     lengths = [len(s) for s in seqs]
 
     if maxlen is not None:
@@ -38,41 +41,42 @@ def prepare_data(seqs, labels, maxlen=None):
 
         if len(lengths) < 1:
             return None, None, None
-    
-    
+
     n_samples = len(seqs)
     maxlen = np.max(lengths)
-    
+
+    num_layers_to_pad = MAXLEN_to_pad_to - maxlen
+
     # columns are the samples in R^maxlen
-    x = np.zeros((maxlen, n_samples)).astype('int64')
-    x_mask = np.zeros((maxlen, n_samples)).astype(np.float32)
+    x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype('int64')
+    x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
     for idx, s in enumerate(seqs):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
 
-    #return the labels as one hot
+    # return the labels as one hot
 
-    labels=binary_one_hot(labels)
+    labels = binary_one_hot(labels)
 
     return x, x_mask, labels, maxlen
 
+
 def binary_one_hot(x):
     try:
-        if type(x).__module__==np.__name__:
-            dim0=x.shape[0]
-        elif isinstance(x,list):
-            dim0=len(x)
+        if type(x).__module__ == np.__name__:
+            dim0 = x.shape[0]
+        elif isinstance(x, list):
+            dim0 = len(x)
         else:
             raise TypeError
     except TypeError:
-        print("Expecting input type to be one of {list, numpy.ndarray}. Received %s" %type(x))
+        print("Expecting input type to be one of {list, numpy.ndarray}. Received %s" % type(x))
 
-    dim1=2
-    output=np.zeros((dim0,dim1))
+    dim1 = 2
+    output = np.zeros((dim0, dim1))
     for i in range(dim0):
-        output[i,x[i]]=1
+        output[i, x[i]] = 1
     return output
-
 
 
 def get_dataset_file(dataset, default_dataset, origin):
@@ -98,7 +102,6 @@ def get_dataset_file(dataset, default_dataset, origin):
         print('Downloading data from %s' % origin)
         urllib.request.urlretrieve(origin, dataset)
 
-        
     return dataset
 
 
@@ -140,9 +143,9 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
 
     train_set = pickle.load(f)
     test_set = pickle.load(f)
-    #train_set is a tuple containin two lists
-    #train_set[0] is a list containing 25000 lists
-    #train_set[1] is a list of integers from {0,1} representing the corresponding sentiments
+    # train_set is a tuple containin two lists
+    # train_set[0] is a list containing 25000 lists
+    # train_set[1] is a list of integers from {0,1} representing the corresponding sentiments
     f.close()
 
     if maxlen:
@@ -154,12 +157,12 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
                 new_train_set_y.append(y)
         # maxlen being not none makes this function ignore lists in train_set[0] of length > maxlen
         train_set = (new_train_set_x, new_train_set_y)
-        #deleting the temporary lists
+        # deleting the temporary lists
         del new_train_set_x, new_train_set_y
 
     # split training set into validation set
     train_set_x, train_set_y = train_set
-    #n_samples is the number of datapoints in train_set_x
+    # n_samples is the number of datapoints in train_set_x
     n_samples = len(train_set_x)
     sidx = np.random.permutation(n_samples)
     n_train = int(np.round(n_samples * (1. - validation_portion)))
