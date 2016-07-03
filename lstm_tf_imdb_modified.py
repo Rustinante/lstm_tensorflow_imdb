@@ -103,9 +103,9 @@ class LSTM_Model(object):
             # softmax weights and bias
             np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
-            self.softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
+            softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(softmax_w))
-            self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
+            softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
             lstm_W = np.concatenate([ortho_weight(dim_proj),
@@ -148,7 +148,7 @@ class LSTM_Model(object):
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
 
         offset = 1e-8
-        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
+        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         print(tf.trainable_variables())
         print("computing the cost")
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(self.softmax_probabilities), reduction_indices=1))
@@ -162,8 +162,8 @@ class LSTM_Model(object):
                                                                  self.lstm_W,
                                                                  self.lstm_U,
                                                                  self.word_embedding,
-                                                                 self.softmax_w,
-                                                                 self.softmax_b])
+                                                                 softmax_w,
+                                                                 softmax_b])
         self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
         print("finished computing the cost")
 
@@ -238,26 +238,6 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
         # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
         embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
-
-        print("m.word_embedding.name:")
-        print(m.word_embedding.name)
-        print("word embedding is:")
-        print(m.word_embedding.eval())
-        print("embedded_inputs is:")
-        print(tf.reshape(embedded_inputs,[-1]).eval())
-        print("lstm_W")
-        print(m.lstm_W.eval())
-        print("lstm_b")
-        print(m.lstm_b.eval())
-        print("lstm_U")
-        print(m.lstm_U.eval())
-        print("after preparing data")
-        print("x is")
-        print(x_mini)
-        print("y is")
-        print(labels_mini)
-        print ("mask is ")
-        print(mask)
 
         if is_training is True:
             cost, accuracy, _ = session.run([m.cost ,m.accuracy,m.train_op],
