@@ -85,8 +85,7 @@ class LSTM_Model(object):
         self._embedded_inputs = tf.placeholder(tf.float32,[MAXLEN,16,128],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-        self.h = tf.placeholder(tf.float32, [None,128])
-        self.c = tf.placeholder(tf.float32, [None,128])
+
         def ortho_weight(ndim):
             np.random.seed(123)
             W = np.random.randn(ndim, ndim)
