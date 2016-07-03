@@ -269,10 +269,11 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
             print("training accuracy is: ", accuracy)
             print(m.softmax_b.eval(session))
 
-
-            move_on = int(raw_input("moving on? 1/0"))
-            if move_on == 0:
-                break
+            counter+=1
+            if counter%50==0:
+                move_on = int(raw_input("moving on? 1/0"))
+                if move_on == 0:
+                    break
 
 
             '''
