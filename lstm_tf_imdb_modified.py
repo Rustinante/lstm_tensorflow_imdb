@@ -82,7 +82,8 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-        self._embedded_inputs = tf.placeholder(tf.float32,[MAXLEN,16,128],name='embedded_inputs')
+        with tf.device("/cpu:0"):
+            self._embedded_inputs = tf.placeholder(tf.float32,[MAXLEN,16,128],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
@@ -96,7 +97,8 @@ class LSTM_Model(object):
             # initialize a word_embedding scheme out of random
             np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
-            self.word_embedding = tf.get_variable('word_embedding', shape=[vocabulary_size, dim_proj],
+            with tf.device("/cpu:0"):
+                self.word_embedding = tf.get_variable('word_embedding', shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
             # softmax weights and bias
             np.random.seed(123)
