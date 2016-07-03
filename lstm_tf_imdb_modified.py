@@ -84,8 +84,8 @@ class LSTM_Model(object):
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         with tf.device("/cpu:0"):
             self._embedded_inputs = tf.placeholder(tf.float32,[MAXLEN,16,128],name='embedded_inputs')
-        self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
-        self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
+            self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
+            self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
         def ortho_weight(ndim):
             np.random.seed(123)
@@ -119,7 +119,7 @@ class LSTM_Model(object):
                                      ortho_weight(dim_proj)], axis=1)
             lstm_b = np.zeros((4 * 128,))
 
-            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
             self.lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
@@ -148,16 +148,16 @@ class LSTM_Model(object):
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
 
         offset = 1e-8
-        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+        softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         print(tf.trainable_variables())
         print("computing the cost")
-        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(self.softmax_probabilities), reduction_indices=1))
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self.cross_entropy)
         opt = tf.train.AdadeltaOptimizer(learning_rate=self._lr)
-        self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
+        self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
-
+        """
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
                                                                  self.lstm_W,
                                                                  self.lstm_U,
@@ -165,6 +165,9 @@ class LSTM_Model(object):
                                                                  softmax_w,
                                                                  softmax_b])
         self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
+        """
+        opt = tf.train.AdadeltaOptimizer(self._lr)
+        self._train_op = opt.minimize(self.cross_entropy)
         print("finished computing the cost")
 
         '''
