@@ -121,9 +121,9 @@ class LSTM_Model(object):
 
             lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
-            self.lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
-            self.lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
+            lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = 16
         self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
@@ -134,7 +134,7 @@ class LSTM_Model(object):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(self._embedded_inputs,[t,0,0],[1,-1,-1]))
             self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, self.lstm_W) + self.lstm_b,
+                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
                                        self.h,
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
@@ -185,9 +185,9 @@ class LSTM_Model(object):
         return x[:, n * dim: (n + 1) * dim]
 
     def step(self, mask, input, h_previous, cell_previous):
-        #with tf.variable_scope(self.RNN_name_scope, reuse=True):
-        #    lstm_U = tf.get_variable("lstm_U")
-        preactivation = tf.matmul(h_previous, self.lstm_U)
+        with tf.variable_scope(self.RNN_name_scope, reuse=True):
+            lstm_U = tf.get_variable("lstm_U")
+        preactivation = tf.matmul(h_previous, lstm_U)
         preactivation = preactivation + input
 
         input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
