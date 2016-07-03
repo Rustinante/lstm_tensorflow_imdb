@@ -310,8 +310,10 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
 def main():
     train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=MAXLEN)
     #with tf.Graph().as_default(), tf.Session() as session:
-    session=tf.Session()
 
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+
+    session = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
     with session.as_default():
         m = LSTM_Model()
         session.run(tf.initialize_all_variables())
