@@ -64,7 +64,7 @@ class Options(object):
     hidden_size = 128
     keep_prob = 1
     learning_rate_decay = 1
-    max_sentence_length_for_testing=300
+    max_sentence_length_for_testing=1000
 
 
 class Flag(object):
@@ -158,7 +158,7 @@ class LSTM_Model(object):
         print("Constructing graphs for cross entropy")
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if is_training:
-            print(tf.trainable_variables())
+            print("Trainable variables: ", tf.trainable_variables())
             self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
