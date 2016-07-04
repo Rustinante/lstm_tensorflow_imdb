@@ -295,7 +295,6 @@ def main():
     train_data, validation_data, test_data = load_data(n_words=config.VOCABULARY_SIZE,
                                                        validation_portion=config.VALIDATION_PORTION,
                                                        maxlen=config.MAXLEN)
-    max_sentence_length_for_testing
     new_test_features=[]
     new_test_labels=[]
     #right now we only consider sentences of length less than config.max_sentence_length_for_testing
@@ -305,7 +304,7 @@ def main():
             new_test_labels.append(label)
     test_data=(new_test_features,new_test_labels)
     del new_test_features, new_test_labels
-    
+
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
@@ -336,10 +335,9 @@ def main():
                     if epoch_number%10 == 0:
                         path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
-        except KeyboardInterrupt:
+        except KeyboardInterrupt("\nStopped Training"):
             pass
-
-        print("Testing")
+        print("\nTesting")
         global testing_epoch_flag
         testing_epoch_flag=True
         config.MAXLEN = config.max_sentence_length_for_testing
