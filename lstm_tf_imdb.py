@@ -318,9 +318,9 @@ def main():
                     if validation_accuracy < ACCURACY_THREASHOLD:
                         print("Validation accuracy reached the threashold. Breaking")
                         break
-                    if epoch_number%10 == 0:
-                        path = saver.save(session,"tmp/params_at_epoch.ckpt",global_step=epoch_number )
-                        print("Saved parameters to %s" %path)
+                   # if epoch_number%10 == 0:
+                       # path = saver.save(session,"tmp/params_at_epoch.ckpt",global_step=epoch_number )
+                       # print("Saved parameters to %s" %path)
         except KeyboardInterrupt:
             pass
 
