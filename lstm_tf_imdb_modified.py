@@ -58,7 +58,7 @@ class Options(object):
     reload_model = None,  # Path to a saved model we want to start from.
     test_size = -1,  # If >0, we keep only this number of test example.
 
-    learning_rate = 1.
+    learning_rate = 10.
     max_grad_norm = 5
     hidden_size = 128
     keep_prob = 1
