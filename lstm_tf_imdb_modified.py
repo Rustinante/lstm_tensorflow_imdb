@@ -245,28 +245,27 @@ def run_epoch(session, m, data, is_training, verbose=True):
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
-            print(type(x_mini.shape[1]))
             num_samples_seen += x_mini.shape[1]
-            num_correct_predictions, _ = session.run([m.num_correct_predictions,m.train_op],
-                             feed_dict={m._inputs: x_mini,
-                             m._targets: labels_mini,
-                             m._mask: mask})
+            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
+                                                     feed_dict={m._inputs: x_mini,
+                                                                m._targets: labels_mini,
+                                                                m._mask: mask})
             total_num_correct_predictions+= num_correct_predictions
-        print(type(total_num_correct_predictions))
+
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
-        return avg_accuracy
+        return np.asscalar(avg_accuracy)
 
     else:
         cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
-                                         feed_dict={m._inputs: x_mini,
-                                         m._targets: labels_mini,
-                                         m._mask: mask})
+                                                    feed_dict={m._inputs: x_mini,
+                                                               m._targets: labels_mini,
+                                                               m._mask: mask})
         total_cost += cost
         total_num_correct_predictions += num_correct_predictions
         accuracy= total_num_correct_predictions/num_samples_seen
         print("total cost is %.4f" %total_cost)
-        return accuracy
+        return np.asscalar(accuracy)
 
 
 # deprecated, since this doesn't seem to use gpu?
