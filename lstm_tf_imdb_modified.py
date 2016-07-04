@@ -122,8 +122,8 @@ class LSTM_Model(object):
             lstm_b = np.zeros((4 * 128,))
 
             self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
-                                          initializer=tf.constant_initializer(lstm_W))
-            self.lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+                                          initializer=tf.constant_initializer(lstm_W),trainable=False)
+            lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
@@ -174,9 +174,9 @@ class LSTM_Model(object):
         return x[:, n * dim: (n + 1) * dim]
 
     def step(self, mask, input, h_previous, cell_previous):
-        #with tf.variable_scope(self.RNN_name_scope, reuse=True):
-        #    lstm_U = tf.get_variable("lstm_U")
-        preactivation = tf.matmul(h_previous, self.lstm_U)
+        with tf.variable_scope(self.RNN_name_scope, reuse=True):
+            lstm_U = tf.get_variable("lstm_U")
+        preactivation = tf.matmul(h_previous, lstm_U)
         preactivation = preactivation + input
 
         input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
@@ -245,8 +245,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._mask: mask})
             print(m.lstm_W.eval())
             total_num_correct_predictions+= num_correct_predictions
-            print ("num_correct_predictions:")
-            print(num_correct_predictions)
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
