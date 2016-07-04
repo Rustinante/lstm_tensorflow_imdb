@@ -71,11 +71,10 @@ class Flag(object):
     first_validation_epoch = True
     testing_epoch = False
 
-config = Options()
-flags =Flag()
+
 
 class LSTM_Model(object):
-    def __init__(self, is_training=True):
+    def __init__(self, config, is_training=True):
         #number of LSTM units, in this case it is dim_proj=128
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
@@ -154,10 +153,10 @@ class LSTM_Model(object):
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+        print("Constructing graphs for cross entropy")
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if is_training:
             print(tf.trainable_variables())
-            print("Constructing graphs for cross entropy")
-            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
             self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
@@ -291,6 +290,8 @@ def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuff
     return result
 
 def main():
+    config = Options()
+    flags = Flag()
     train_data, validation_data, test_data = load_data(n_words=config.VOCABULARY_SIZE,
                                                        validation_portion=config.VALIDATION_PORTION,
                                                        maxlen=config.MAXLEN)
