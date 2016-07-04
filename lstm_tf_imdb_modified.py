@@ -243,7 +243,7 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
         # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
         #embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
-
+        print (type(x_mini[0][0]))
         if is_training is True:
             cost, accuracy, _ = session.run([m.cost ,m.accuracy,m.train_op],
                                             {m._inputs: x_mini,
