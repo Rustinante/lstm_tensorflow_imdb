@@ -225,8 +225,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     """
 
     if is_training:
-        if first_training_epoch_flag:
-            first_training_epoch_flag = False
+        if global first_training_epoch_flag:
+            global first_training_epoch_flag = False
             print("For training, total number of reviews is: %d" % total_num_reviews)
             print("For training, total number of batches is: %d" % total_num_batches)
 
@@ -245,9 +245,9 @@ def run_epoch(session, m, data, is_training, verbose=True):
         return np.asscalar(avg_accuracy)
 
     else:
-        if first_validation_epoch_flag or testing_epoch_flag:
-            first_validation_epoch = False
-            testing_epoch_flag = False
+        if global first_validation_epoch_flag or global testing_epoch_flag:
+            global first_validation_epoch = False
+            global testing_epoch_flag = False
             print("For validation, total number of reviews is: %d" % total_num_reviews)
             print("For validation, total number of batches is: %d" % total_num_batches)
 
@@ -319,7 +319,7 @@ def main():
                     break
 
         print("Testing")
-        testing_epoch_flag=True
+        global testing_epoch_flag=True
         testing_accuracy = run_epoch(session, m, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
