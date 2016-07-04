@@ -21,8 +21,6 @@ The hyperparameters used in the model:
 - num_layers - the number of LSTM layers
 - num_steps - the number of unrolled steps of LSTM
 - hidden_size - the number of LSTM units
-- max_epoch - the number of epochs trained with the initial learning rate
-- max_max_epoch - the total number of epochs for training
 - keep_prob - the probability of keeping weights in the dropout layer
 - lr_decay - the decay of the learning rate for each epoch after "max_epoch"
 - batch_size - the batch size
@@ -38,13 +36,14 @@ import numpy as np
 import tensorflow as tf
 from imdb import *
 
-MAXLEN=100
+MAXLEN= 100
 np.random.seed(123)
-
-GPU_ID=1
-dim_proj=128
-vocabulary_size = 10000
+VALIDATION_PORTION= 0.05
+GPU_ID= 1
+dim_proj= 128
+VOCABULARY_SIZE = 10000
 BATCH_SIZE=16
+ACCURACY_THREASHOLD= 1e-5
 
 class Options(object):
     m_proj = 128
@@ -52,11 +51,9 @@ class Options(object):
     max_epoch = 5000
     display_frequency = 10
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
-    vocabulary_size = 10000  # Vocabulary size
+    VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
-    validFreq = 370  # Compute the validation error after this number of update.
     saveFreq = 1110  # Save the parameters after every saveFreq updates
-    maxlen = 100  # Sequence longer then this get ignored
     valid_batch_size = 64  # The batch size used for validation/test set.
     use_dropout = True,  # if False slightly faster, but worst test error
     # This frequently need a bigger model.
@@ -66,10 +63,7 @@ class Options(object):
     init_scale = 0.05
     learning_rate = 0.0001
     max_grad_norm = 5
-    num_layers = 2
-
     hidden_size = 128
-    max_max_epoch = 5000
     keep_prob = 1
     lr_decay = 1
     batch_size = BATCH_SIZE
@@ -98,7 +92,7 @@ class LSTM_Model(object):
             np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
             with tf.device("/cpu:0"):
-                word_embedding = tf.get_variable('word_embedding', shape=[vocabulary_size, dim_proj],
+                word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
                                                   initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
                 unrolled_inputs=tf.reshape(self._inputs,[1,-1])
@@ -159,8 +153,8 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
 
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
-        self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
+        self.num_correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
+        self.accuracy = tf.reduce_mean(tf.cast(self.num_correct_predictions, tf.float32))
         """
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
                                                                  self.lstm_W,
@@ -222,69 +216,57 @@ class LSTM_Model(object):
 
 
 
-def run_epoch(session, m, data, is_training, verbose=False, validation_data=None):
-    """Runs the model on the given data."""
-    start_time = time.time()
-    costs = 0.0
-    iters = 0
+def run_epoch(session, m, data, is_training, verbose=True):
+    if is_training not in [True,False]:
+        raise ValueError("mode must be one of [True, False] but received ", is_training)
 
+    start_time = time.time()
+    total_cost = 0.0
+    num_samples_seen= 0
+    total_num_correct_predictions= 0
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
-
-    print("length of the data is: %d" %len(data[0]))
-    print("total number of batches is: %d" % total_num_batches)
+    total_num_reviews = len(data[0])
 
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    temporary_count = BATCH_SIZE * total_num_batches
+    if temporary_count < total_num_reviews:
+        total_num_batches += 1
+        x.append(data[0][temporary_count:])
+        labels.append(data[1][temporary_count:])
 
-    counter=0
-    for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-        counter+=1
-        x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
-        # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
-        #embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
-        print (type(x_mini[0][0]))
-        if is_training is True:
-            cost, accuracy, _ = session.run([m.cost ,m.accuracy,m.train_op],
-                                            {m._inputs: x_mini,
-                                             m._targets: labels_mini,
-                                             m._mask: mask})
-            costs += cost
-            iters += maxlen
-            print("training accuracy is: ", accuracy)
-            """
-            counter+=1
-            if counter%50==0:
-                move_on = int(raw_input("moving on? 1/0"))
-                if move_on == 0:
-                    break
-            """
+    print("For %s, total number of reviews is: %d" % ('training' if is_training else 'validation/testing',total_num_reviews))
+    print("For %s, total number of batches is: %d" % ('training' if is_training else 'validation/testing',total_num_batches))
 
-            '''
-            if verbose and mini_batch_number % 10 == 0 and counter  is not 1:
-                print("VALIDATING ACCURACY\n")
-                print("%.3f perplexity: %.3f speed: %.0f wps" %
-                    (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
-                    iters * m.batch_size / (time.time() - start_time)))
+    if is_training:
+        for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
+            # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
+            x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
+            num_samples_seen += x_mini.shape[1]
+            num_correct_predictions, _ = session.run([m.num_correct_predictions,m.train_op],
+                            {m._inputs: x_mini,
+                             m._targets: labels_mini,
+                             m._mask: mask})
+            total_num_correct_predictions+= num_correct_predictions
 
-                valid_perplexity = run_epoch(session, m, validation_data, is_training=False)
-                print("Epoch: %d Valid Perplexity: %.3f" % (1, valid_perplexity))
-                print("finished VALIDATING ACCURACY")
-                '''
-        '''
-        else:
-            cost, accuracy = session.run([m.cost, m.accuracy],
-                                         {m.targets: labels_mini,
-                                          m._mask: mask})
-            costs += cost
-            iters += maxlen
+        avg_accuracy = total_num_correct_predictions/num_samples_seen
+        print("Traversed through %d samples." %num_samples_seen)
+        return avg_accuracy
 
-            print("validation/test accuracy is: %f" %accuracy)
-        '''
+    else:
+        cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
+                                        {m._inputs: x_mini,
+                                         m._targets: labels_mini,
+                                         m._mask: mask})
+        total_cost += cost
+        total_num_correct_predictions += num_correct_predictions
+        accuracy= total_num_correct_predictions/num_samples_seen
+        print("total cost is %.4f" %total_cost)
+        return accuracy
 
 
-    return np.exp(costs / iters)
-
+# deprecated, since this doesn't seem to use gpu?
 def words_to_embedding(word_embedding, word_matrix):
     maxlen = word_matrix.shape[0]
     n_samples = word_matrix.shape[1]
@@ -292,13 +274,13 @@ def words_to_embedding(word_embedding, word_matrix):
 
     unrolled_matrix = np.reshape(word_matrix,[-1])
     dim0 = maxlen * n_samples
-    one_hot=np.zeros((dim0, vocabulary_size),dtype=np.float32)
+    one_hot=np.zeros((dim0, VOCABULARY_SIZE),dtype=np.float32)
     for i in range(dim0):
         one_hot[i, int(unrolled_matrix[i])] = 1
     '''
     on_value = float(1)
     off_value = float(0)
-    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=on_value, off_value=off_value, axis=1)
+    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.VOCABULARY_SIZE, on_value=on_value, off_value=off_value, axis=1)
     '''
     embedded_words = tf.matmul(one_hot, word_embedding)
     embedded_words = tf.reshape(embedded_words, [maxlen, n_samples, dim_proj])
@@ -311,27 +293,33 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=MAXLEN)
+    train_data, validation_data, test_data = load_data(n_words=VOCABULARY_SIZE,
+                                                       validation_portion=VALIDATION_PORTION,
+                                                       maxlen=MAXLEN)
     #with tf.Graph().as_default(), tf.Session() as session:
-
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
-
-    session = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+    GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
+    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
     with session.as_default():
         m = LSTM_Model()
-        for i in range(config.max_max_epoch):
-            session.run(tf.initialize_all_variables())
-            #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
-            #m.assign_lr(session, config.learning_rate * lr_decay)
+        session.run(tf.initialize_all_variables())
+        for i in range(config.max_epoch):
+            epoch_number= i+1
+            print("Training")
             m.assign_lr(session, config.learning_rate)
-            print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-            train_perplexity = run_epoch(session, m, train_data, is_training=True, verbose=True,validation_data=valid_data)
-            print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-            #valid_perplexity = run_epoch(session, mvalid, valid_data)
-            #print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-        print("FINISHED TRAINING\n")
-        test_perplexity = run_epoch(session, m, test_data, is_training=False)
-        print("Test Perplexity: %.3f" % test_perplexity)
+            print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
+            average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
+            print("Average training accuracy in epoch %d is: %.4f" %(epoch_number, average_training_accuracy))
+
+            print("Validating")
+            validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
+            print("Validation accuracy in epoch %d is: %.4f" %(epoch_number, validation_accuracy))
+            if validation_accuracy < ACCURACY_THREASHOLD:
+                print("Validation accuracy reached the threashold. Breaking")
+                break
+
+        print("Testing")
+        testing_accuracy = run_epoch(session, m, test_data, is_training=False)
+        print("Testing accuracy is: %.4f" %testing_accuracy)
 
 
 if __name__ == "__main__":
