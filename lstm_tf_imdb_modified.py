@@ -31,25 +31,21 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-
 import numpy as np
 import tensorflow as tf
 from imdb import *
 
 MAXLEN= 100
-np.random.seed(123)
 VALIDATION_PORTION= 0.05
-GPU_ID= 1
 dim_proj= 128
 VOCABULARY_SIZE = 10000
 BATCH_SIZE=16
 ACCURACY_THREASHOLD= 1e-5
+np.random.seed(123)
 
 class Options(object):
-    m_proj = 128
     patience = 10
     max_epoch = 5000
-    display_frequency = 10
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -60,13 +56,11 @@ class Options(object):
     reload_model = None,  # Path to a saved model we want to start from.
     test_size = -1,  # If >0, we keep only this number of test example.
 
-    init_scale = 0.05
     learning_rate = 0.0001
     max_grad_norm = 5
     hidden_size = 128
     keep_prob = 1
-    lr_decay = 1
-    batch_size = BATCH_SIZE
+    learning_rate_decay = 1
 
 config = Options()
 
