@@ -166,7 +166,7 @@ class LSTM_Model(object):
                                                                  softmax_b])
         self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
         """
-        self._train_op = tf.train.GradientDescentOptimizer(0.0001).minimize(self.cross_entropy)
+        self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
