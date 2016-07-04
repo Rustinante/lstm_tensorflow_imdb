@@ -48,7 +48,7 @@ class Options(object):
     MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 25
+    max_epoch = 20
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
