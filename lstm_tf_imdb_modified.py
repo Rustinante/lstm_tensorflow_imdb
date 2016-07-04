@@ -110,7 +110,7 @@ class LSTM_Model(object):
             softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
-            self.lstm_W = np.concatenate([ortho_weight(dim_proj),
+            lstm_W = np.concatenate([ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj)], axis=1)
@@ -121,7 +121,7 @@ class LSTM_Model(object):
                                      ortho_weight(dim_proj)], axis=1)
             lstm_b = np.zeros((4 * 128,))
 
-            lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
             lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
@@ -136,7 +136,7 @@ class LSTM_Model(object):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
             self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
+                                       tf.matmul(inputs_slice, self.lstm_W) + lstm_b,
                                        self.h,
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
