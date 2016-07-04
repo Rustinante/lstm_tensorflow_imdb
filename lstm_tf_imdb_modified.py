@@ -322,7 +322,8 @@ def main():
                     break
 
         print("Testing")
-        global testing_epoch_flag=True
+        global testing_epoch_flag
+        testing_epoch_flag=True
         testing_accuracy = run_epoch(session, m, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
