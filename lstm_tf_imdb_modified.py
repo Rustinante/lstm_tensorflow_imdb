@@ -245,6 +245,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._mask: mask})
             print(m.lstm_W.eval())
             total_num_correct_predictions+= num_correct_predictions
+            print ("num_correct_predictions:")
+            print(num_correct_predictions)
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
