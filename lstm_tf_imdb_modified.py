@@ -226,7 +226,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
     if is_training:
         if first_training_epoch_flag:
             first_training_epoch = False
-            print("For training, total number of reviews is: %d" % total_num_review)
+            print("For training, total number of reviews is: %d" % total_num_reviews)
             print("For training, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
@@ -247,7 +247,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
         if first_validation_epoch_flag or testing_epoch_flag:
             first_validation_epoch = False
             testing_epoch_flag = False
-            print("For validation, total number of reviews is: %d" % total_num_review)
+            print("For validation, total number of reviews is: %d" % total_num_reviews)
             print("For validation, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
