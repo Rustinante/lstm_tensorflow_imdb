@@ -100,7 +100,7 @@ def get_dataset_file(dataset, default_dataset, origin):
 
 
 def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=None,
-              sort_by_len=True):
+              sort_by_len=True, test_size=500):
     '''Loads the dataset
 
     :type path: String
@@ -198,5 +198,11 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     train = (train_set_x, train_set_y)
     valid = (valid_set_x, valid_set_y)
     test = (test_set_x, test_set_y)
-
+    if test_size>0:
+        idx = numpy.arange(len(test_set[0]))
+        numpy.random.shuffle(idx)
+        idx = idx[:test_size]
+        test = ([test_set[0][n] for n in idx], [test_set[1][n] for n in idx])
+    else:
+        print("test_size <= 0 means we take the whole dataset for testing")
     return train, valid, test
