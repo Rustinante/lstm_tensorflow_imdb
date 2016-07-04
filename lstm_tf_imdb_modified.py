@@ -87,7 +87,6 @@ class LSTM_Model(object):
             self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
             self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
-
         def ortho_weight(ndim):
             np.random.seed(123)
             W = np.random.randn(ndim, ndim)
