@@ -39,7 +39,7 @@ from imdb import *
 
 dim_proj= 128
 BATCH_SIZE=16
-ACCURACY_THREASHOLD= 1e-5
+ACCURACY_THREASHOLD= 0.82
 np.random.seed(123)
 
 
@@ -329,7 +329,7 @@ def main():
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
                     print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
-                    if validation_accuracy < ACCURACY_THREASHOLD:
+                    if validation_accuracy > ACCURACY_THREASHOLD:
                         print("Validation accuracy reached the threashold. Breaking")
                         break
                     if epoch_number%10 == 0:
