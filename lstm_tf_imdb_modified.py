@@ -149,7 +149,7 @@ class LSTM_Model(object):
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         print(tf.trainable_variables())
-        print("computing the cost")
+        print("Constructing graphs for cross entropy")
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
 
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
@@ -166,20 +166,10 @@ class LSTM_Model(object):
         """
         opt = tf.train.AdadeltaOptimizer(self._lr)
         self._train_op = opt.minimize(self.cross_entropy)
-        print("finished computing the cost")
-
-        '''
-        if is_training and config.keep_prob < 1:
-            lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
-                lstm_cell, output_keep_prob=config.keep_prob)
-        '''
+        print("Finished constructing the graph")
 
 
     def _slice(self, x, n, dim):
-        '''
-        if x.ndim == 3:
-            return x[:, :, n * dim : (n + 1) * dim]
-            '''
         return x[:, n * dim: (n + 1) * dim]
 
     def step(self, mask, input, h_previous, cell_previous):
@@ -265,6 +255,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
         total_num_correct_predictions += num_correct_predictions
         accuracy= total_num_correct_predictions/num_samples_seen
         print("total cost is %.4f" %total_cost)
+        print(accuracy.shape)
         return np.asscalar(accuracy)
 
 
