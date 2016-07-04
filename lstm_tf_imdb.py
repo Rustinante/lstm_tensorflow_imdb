@@ -64,6 +64,7 @@ class Options(object):
     hidden_size = 128
     keep_prob = 1
     learning_rate_decay = 1
+    max_sentence_length_for_testing=300
 
 
 class Flag(object):
@@ -291,10 +292,20 @@ def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuff
     return result
 
 def main():
-
     train_data, validation_data, test_data = load_data(n_words=config.VOCABULARY_SIZE,
                                                        validation_portion=config.VALIDATION_PORTION,
                                                        maxlen=config.MAXLEN)
+    max_sentence_length_for_testing
+    new_test_features=[]
+    new_test_labels=[]
+    #right now we only consider sentences of length less than config.max_sentence_length_for_testing
+    for feature, label in test_data:
+        if len(feature)<config.max_sentence_length_for_testing:
+            new_test_features.append(feature)
+            new_test_labels.append(label)
+    test_data=(new_test_features,new_test_labels)
+    del new_test_features, new_test_labels
+    
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
@@ -331,7 +342,7 @@ def main():
         print("Testing")
         global testing_epoch_flag
         testing_epoch_flag=True
-        config.MAXLEN = 2820
+        config.MAXLEN = config.max_sentence_length_for_testing
         with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
