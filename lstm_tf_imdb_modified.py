@@ -303,9 +303,9 @@ def main():
                 print("\nValidating")
                 validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
                 print("Validation accuracy in epoch %d is: %.4f\n" %(epoch_number, validation_accuracy))
-            if validation_accuracy < ACCURACY_THREASHOLD:
-                print("Validation accuracy reached the threashold. Breaking")
-                break
+                if validation_accuracy < ACCURACY_THREASHOLD:
+                    print("Validation accuracy reached the threashold. Breaking")
+                    break
 
         print("Testing")
         testing_accuracy = run_epoch(session, m, test_data, is_training=False)
