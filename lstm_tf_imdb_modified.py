@@ -198,7 +198,9 @@ class LSTM_Model(object):
       return self._train_op
 
 
-
+first_training_epoch_flag=True
+first_validation_epoch_flag=True
+testing_epoch_flag=False
 def run_epoch(session, m, data, is_training, verbose=True):
     if is_training not in [True,False]:
         raise ValueError("mode must be one of [True, False] but received ", is_training)
@@ -221,10 +223,12 @@ def run_epoch(session, m, data, is_training, verbose=True):
         labels.append(data[1][temporary_count:])
     """
 
-    print("For %s, total number of reviews is: %d" % ('training' if is_training else 'validation/testing',total_num_reviews))
-    print("For %s, total number of batches is: %d" % ('training' if is_training else 'validation/testing',total_num_batches))
-
     if is_training:
+        if first_training_epoch_flag:
+            first_training_epoch = False
+            print("For training, total number of reviews is: %d" % total_num_review)
+            print("For training, total number of batches is: %d" % total_num_batches)
+
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
@@ -240,6 +244,12 @@ def run_epoch(session, m, data, is_training, verbose=True):
         return np.asscalar(avg_accuracy)
 
     else:
+        if first_validation_epoch_flag or testing_epoch_flag:
+            first_validation_epoch = False
+            testing_epoch_flag = False
+            print("For validation, total number of reviews is: %d" % total_num_review)
+            print("For validation, total number of batches is: %d" % total_num_batches)
+
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
             num_samples_seen += x_mini.shape[1]
@@ -284,7 +294,6 @@ def main():
     train_data, validation_data, test_data = load_data(n_words=VOCABULARY_SIZE,
                                                        validation_portion=VALIDATION_PORTION,
                                                        maxlen=MAXLEN)
-    #with tf.Graph().as_default(), tf.Session() as session:
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
     with session.as_default():
@@ -294,20 +303,22 @@ def main():
         print("Initialized all variables")
         for i in range(config.max_epoch):
             epoch_number= i+1
-            print("Training")
+            print("\nTraining")
             m.assign_lr(session, config.learning_rate)
             print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
             average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
-            print("Average training accuracy in epoch %d is: %.4f" %(epoch_number, average_training_accuracy))
-            if epoch_number%300 ==0:
+            print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
+
+            if epoch_number%5 ==0:
                 print("\nValidating")
                 validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
-                print("Validation accuracy in epoch %d is: %.4f\n" %(epoch_number, validation_accuracy))
+                print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
                 if validation_accuracy < ACCURACY_THREASHOLD:
                     print("Validation accuracy reached the threashold. Breaking")
                     break
 
         print("Testing")
+        testing_epoch_flag=True
         testing_accuracy = run_epoch(session, m, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
