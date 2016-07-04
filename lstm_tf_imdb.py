@@ -211,6 +211,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
     total_num_batches = len(data[0]) // BATCH_SIZE
     total_num_reviews = len(data[0])
 
+    print(list_of_training_index_list)
     #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     x=[]
@@ -218,8 +219,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
     for l in list_of_training_index_list:
         x.append([data[0][i] for i in l])
         labels.append((data[1][i] for i in l))
-        
-    print(labels)
 
     if is_training:
         if flags.first_training_epoch:
