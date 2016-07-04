@@ -35,7 +35,7 @@ import numpy as np
 import tensorflow as tf
 from imdb import *
 
-MAXLEN= 2820
+MAXLEN= 200
 VALIDATION_PORTION= 0.05
 dim_proj= 128
 VOCABULARY_SIZE = 10000
