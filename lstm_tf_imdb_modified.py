@@ -158,8 +158,7 @@ class LSTM_Model(object):
                                                                  softmax_b])
         self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
         """
-        opt = tf.train.AdadeltaOptimizer(self._lr)
-        self._train_op = opt.minimize(self.cross_entropy)
+        self._train_op = tf.train.AdadeltaOptimizer(self._lr).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -300,10 +299,10 @@ def main():
             print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
             average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
             print("Average training accuracy in epoch %d is: %.4f" %(epoch_number, average_training_accuracy))
-
-            print("Validating")
-            validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
-            print("Validation accuracy in epoch %d is: %.4f" %(epoch_number, validation_accuracy))
+            if epoch_number%300 ==0:
+                print("\nValidating")
+                validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
+                print("Validation accuracy in epoch %d is: %.4f\n" %(epoch_number, validation_accuracy))
             if validation_accuracy < ACCURACY_THREASHOLD:
                 print("Validation accuracy reached the threashold. Breaking")
                 break
