@@ -296,7 +296,7 @@ def main():
                                                        maxlen=MAXLEN)
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
-    saver = tf.train.Saver()
+    #saver = tf.train.Saver()
     with session.as_default():
         m = LSTM_Model()
         print("Initializing all variables")
