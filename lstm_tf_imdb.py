@@ -73,7 +73,7 @@ class Flag(object):
 config = Options()
 flags =Flag()
 
-class LSTM_Model(object):
+class LSTM_Model(object, is_training=True):
     def __init__(self):
         #number of LSTM units, in this case it is dim_proj=128
         self.size = config.hidden_size
@@ -151,14 +151,13 @@ class LSTM_Model(object):
 
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
-        print(tf.trainable_variables())
-        print("Constructing graphs for cross entropy")
-        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
-
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)),dtype=tf.float32))
-
-        self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+        if is_training:
+            print(tf.trainable_variables())
+            print("Constructing graphs for cross entropy")
+            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
+            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -299,6 +298,7 @@ def main():
 
     with session.as_default():
         m = LSTM_Model()
+
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
         print("Initialized all variables")
@@ -328,7 +328,9 @@ def main():
         print("Testing")
         global testing_epoch_flag
         testing_epoch_flag=True
-        testing_accuracy = run_epoch(session, m, test_data, is_training=False)
+        MAXLEN = 2820
+        m_test = LSTM_Model(is_training=False)
+        testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
 
