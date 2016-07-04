@@ -43,9 +43,7 @@ BATCH_SIZE=16
 ACCURACY_THREASHOLD= 1e-5
 np.random.seed(123)
 
-first_training_epoch_flag=True
-first_validation_epoch_flag=True
-testing_epoch_flag=False
+
 
 class Options(object):
     patience = 10
@@ -66,7 +64,14 @@ class Options(object):
     keep_prob = 1
     learning_rate_decay = 1
 
+
+class Flag(object):
+    first_training_epoch = True
+    first_validation_epoch = True
+    testing_epoch = False
+
 config = Options()
+flags =Flag()
 
 class LSTM_Model(object):
     def __init__(self):
@@ -225,9 +230,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     """
 
     if is_training:
-        if first_training_epoch_flag:
-            global first_training_epoch_flag
-            first_training_epoch_flag= False
+        if flags.first_training_epoch:
+            flags.first_training_epoch= False
             print("For training, total number of reviews is: %d" % total_num_reviews)
             print("For training, total number of batches is: %d" % total_num_batches)
 
@@ -246,11 +250,9 @@ def run_epoch(session, m, data, is_training, verbose=True):
         return np.asscalar(avg_accuracy)
 
     else:
-        if first_validation_epoch_flag or testing_epoch_flag:
-            global first_validation_epoch
-            first_validation_epoch_flag= False
-            global testing_epoch_flag
-            testing_epoch_flag= False
+        if flags.first_validation_epoch or flags.testing_epoch:
+            flags.first_validation_epoch= False
+            flags.testing_epoch= False
             print("For validation, total number of reviews is: %d" % total_num_reviews)
             print("For validation, total number of batches is: %d" % total_num_batches)
 
