@@ -64,7 +64,7 @@ class Options(object):
     hidden_size = 128
     keep_prob = 1
     learning_rate_decay = 1
-    max_sentence_length_for_testing=1000
+    max_sentence_length_for_testing=100
 
 
 class Flag(object):
@@ -338,8 +338,8 @@ def main():
         except KeyboardInterrupt("\nStopped Training"):
             pass
         print("\nTesting")
-        global testing_epoch_flag
-        testing_epoch_flag=True
+
+        config.testing_epoch=True
         config.MAXLEN = config.max_sentence_length_for_testing
         with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
