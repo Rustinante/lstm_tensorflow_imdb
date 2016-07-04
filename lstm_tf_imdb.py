@@ -122,7 +122,7 @@ class LSTM_Model(object):
             lstm_b = np.zeros((4 * 128,))
 
             self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
-                                          initializer=tf.constant_initializer(lstm_W),trainable=False)
+                                          initializer=tf.constant_initializer(lstm_W))
             lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
@@ -166,7 +166,7 @@ class LSTM_Model(object):
                                                                  softmax_b])
         self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
         """
-        self._train_op = tf.train.AdadeltaOptimizer(self._lr).minimize(self.cross_entropy)
+        self._train_op = tf.train.GradientDescentOptimizer(self._lr).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
