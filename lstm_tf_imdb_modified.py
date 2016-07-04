@@ -43,6 +43,10 @@ BATCH_SIZE=16
 ACCURACY_THREASHOLD= 1e-5
 np.random.seed(123)
 
+first_training_epoch_flag=True
+first_validation_epoch_flag=True
+testing_epoch_flag=False
+
 class Options(object):
     patience = 10
     max_epoch = 5000
@@ -70,10 +74,10 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-        with tf.device("/cpu:0"):
-            self._inputs = tf.placeholder(tf.int64,[MAXLEN,BATCH_SIZE],name='embedded_inputs')
-            self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
-            self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
+
+        self._inputs = tf.placeholder(tf.int64,[MAXLEN,BATCH_SIZE],name='embedded_inputs')
+        self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
+        self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
         def ortho_weight(ndim):
             np.random.seed(123)
@@ -85,13 +89,13 @@ class LSTM_Model(object):
             # initialize a word_embedding scheme out of random
             np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
-            with tf.device("/cpu:0"):
-                word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
-                                                  initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
-                unrolled_inputs=tf.reshape(self._inputs,[1,-1])
-                embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
-                embedded_inputs = tf.reshape(embedded_inputs, [MAXLEN, BATCH_SIZE, dim_proj])
+            word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
+                                              initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
+
+            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
+            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+            embedded_inputs = tf.reshape(embedded_inputs, [MAXLEN, BATCH_SIZE, dim_proj])
 
             # softmax weights and bias
             np.random.seed(123)
@@ -148,7 +152,6 @@ class LSTM_Model(object):
 
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)),dtype=tf.float32))
-        self.accuracy = tf.reduce_mean(tf.cast(self.num_correct_predictions, tf.float32))
         """
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
                                                                  self.lstm_W,
@@ -198,9 +201,7 @@ class LSTM_Model(object):
       return self._train_op
 
 
-first_training_epoch_flag=True
-first_validation_epoch_flag=True
-testing_epoch_flag=False
+
 def run_epoch(session, m, data, is_training, verbose=True):
     if is_training not in [True,False]:
         raise ValueError("mode must be one of [True, False] but received ", is_training)
@@ -225,7 +226,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
     if is_training:
         if first_training_epoch_flag:
-            first_training_epoch = False
+            first_training_epoch_flag = False
             print("For training, total number of reviews is: %d" % total_num_reviews)
             print("For training, total number of batches is: %d" % total_num_batches)
 
