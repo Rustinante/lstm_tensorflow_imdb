@@ -121,7 +121,7 @@ class LSTM_Model(object):
                                      ortho_weight(dim_proj)], axis=1)
             lstm_b = np.zeros((4 * 128,))
 
-            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
             lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
@@ -136,7 +136,7 @@ class LSTM_Model(object):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
             self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, self.lstm_W) + lstm_b,
+                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
                                        self.h,
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
@@ -157,15 +157,7 @@ class LSTM_Model(object):
 
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)),dtype=tf.float32))
-        """
-        grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
-                                                                 self.lstm_W,
-                                                                 self.lstm_U,
-                                                                 self.word_embedding,
-                                                                 softmax_w,
-                                                                 softmax_b])
-        self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
-        """
+
         self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
@@ -243,7 +235,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                      feed_dict={m._inputs: x_mini,
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask})
-            print(m.lstm_W.eval())
+            #print(m.lstm_W.eval())
             total_num_correct_predictions+= num_correct_predictions
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
