@@ -300,7 +300,7 @@ def main():
 
     with session.as_default():
         with tf.variable_scope("model"):
-            m = LSTM_Model()
+            m = LSTM_Model(config)
 
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
@@ -333,7 +333,7 @@ def main():
         testing_epoch_flag=True
         config.MAXLEN = 2820
         with tf.variable_scope("model",reuse=True):
-            m_test = LSTM_Model(is_training=False)
+            m_test = LSTM_Model(config, is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
