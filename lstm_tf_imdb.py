@@ -218,7 +218,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
     labels=[]
     for l in list_of_training_index_list:
         x.append([data[0][i] for i in l])
-        labels.append((data[1][i] for i in l))
+        labels.append([data[1][i] for i in l])
 
     if is_training:
         if flags.first_training_epoch:
