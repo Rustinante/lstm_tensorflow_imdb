@@ -58,7 +58,7 @@ class Options(object):
     reload_model = None,  # Path to a saved model we want to start from.
     test_size = -1,  # If >0, we keep only this number of test example.
 
-    learning_rate = 2.
+    learning_rate = 0.001
     max_grad_norm = 5
     hidden_size = 128
     keep_prob = 1
@@ -85,14 +85,14 @@ class LSTM_Model(object):
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
         def ortho_weight(ndim):
-            #np.random.seed(123)
+            np.random.seed(123)
             W = np.random.randn(ndim, ndim)
             u, s, v = np.linalg.svd(W)
             return u.astype(np.float32)
 
         with tf.variable_scope("RNN") as self.RNN_name_scope:
             # initialize a word_embedding scheme out of random
-            #np.random.seed(123)
+            np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
             with tf.device("/cpu:0"):
                 word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
@@ -103,7 +103,7 @@ class LSTM_Model(object):
             embedded_inputs = tf.reshape(embedded_inputs, [MAXLEN, BATCH_SIZE, dim_proj])
 
             # softmax weights and bias
-            #np.random.seed(123)
+            np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
             softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(softmax_w))
