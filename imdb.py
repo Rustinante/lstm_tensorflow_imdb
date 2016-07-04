@@ -51,7 +51,7 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
     x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int64)
     x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
     for idx, s in enumerate(seqs):
-        x[:lengths[idx], idx] = s.astype(np.int64)
+        x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
 
     # return the labels as one hot
