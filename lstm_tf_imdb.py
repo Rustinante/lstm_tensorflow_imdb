@@ -35,7 +35,7 @@ import numpy as np
 import tensorflow as tf
 from imdb import *
 
-MAXLEN= 200
+MAXLEN= 100
 VALIDATION_PORTION= 0.05
 dim_proj= 128
 VOCABULARY_SIZE = 10000
@@ -320,7 +320,7 @@ def main():
                         print("Validation accuracy reached the threashold. Breaking")
                         break
                     if epoch_number%10 == 0:
-                        path = saver.save(session,"/tmp/params_at_epoch.ckpt",global_step=epoch_number )
+                        path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
         except KeyboardInterrupt:
             pass
