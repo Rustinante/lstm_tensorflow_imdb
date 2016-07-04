@@ -202,7 +202,7 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
         idx = np.arange(len(test_set[0]))
         np.random.shuffle(idx)
         idx = idx[:test_size]
-        test = ([test_set[0][n] for n in idx], [test_set[1][n] for n in idx])
+        test = ([test[0][n] for n in idx], [test[1][n] for n in idx])
     else:
         print("test_size <= 0 means we take the whole dataset for testing")
     return train, valid, test
