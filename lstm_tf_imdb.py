@@ -210,8 +210,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
     list_of_training_index_list = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
     total_num_reviews = len(data[0])
-
-    print(list_of_training_index_list)
     #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     x=[]
@@ -298,6 +296,7 @@ def main():
                                                        maxlen=MAXLEN)
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
+    saver = tf.train.Saver()
     with session.as_default():
         m = LSTM_Model()
         print("Initializing all variables")
@@ -312,13 +311,16 @@ def main():
                 average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
 
-                if epoch_number%5 ==0:
+                if epoch_number%5 == 0:
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
                     print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
                     if validation_accuracy < ACCURACY_THREASHOLD:
                         print("Validation accuracy reached the threashold. Breaking")
                         break
+                    if epoch_number%10 == 0:
+                        path = saver.save(session,"tmp/params_at_epoch.ckpt",global_step=epoch_number )
+                        print("Saved parameters to %s" %path)
         except KeyboardInterrupt:
             pass
 
