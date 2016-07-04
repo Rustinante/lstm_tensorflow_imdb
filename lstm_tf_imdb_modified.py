@@ -110,7 +110,7 @@ class LSTM_Model(object):
             softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
-            lstm_W = np.concatenate([ortho_weight(dim_proj),
+            self.lstm_W = np.concatenate([ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj),
                                      ortho_weight(dim_proj)], axis=1)
@@ -243,6 +243,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                      feed_dict={m._inputs: x_mini,
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask})
+            print(m.lstm_W.eval())
             total_num_correct_predictions+= num_correct_predictions
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
