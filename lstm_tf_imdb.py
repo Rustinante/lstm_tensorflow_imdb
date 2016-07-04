@@ -21,8 +21,6 @@ The hyperparameters used in the model:
 - num_layers - the number of LSTM layers
 - num_steps - the number of unrolled steps of LSTM
 - hidden_size - the number of LSTM units
-- max_epoch - the number of epochs trained with the initial learning rate
-- max_max_epoch - the total number of epochs for training
 - keep_prob - the probability of keeping weights in the dropout layer
 - lr_decay - the decay of the learning rate for each epoch after "max_epoch"
 - batch_size - the batch size
@@ -33,48 +31,47 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-
 import numpy as np
 import tensorflow as tf
 from imdb import *
-from LSTM_Cell_with_Mask import *
 
+MAXLEN= 100
+VALIDATION_PORTION= 0.05
+dim_proj= 128
+VOCABULARY_SIZE = 10000
+BATCH_SIZE=16
+ACCURACY_THREASHOLD= 1e-5
 np.random.seed(123)
 
-GPU_ID=1
-dim_proj=128
-vocabulary_size = 10000
-BATCH_SIZE=16
+
 
 class Options(object):
-    m_proj = 128
     patience = 10
     max_epoch = 5000
-    display_frequency = 10
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
-    vocabulary_size = 10000  # Vocabulary size
+    VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
-    validFreq = 370  # Compute the validation error after this number of update.
     saveFreq = 1110  # Save the parameters after every saveFreq updates
-    maxlen = 100  # Sequence longer then this get ignored
     valid_batch_size = 64  # The batch size used for validation/test set.
     use_dropout = True,  # if False slightly faster, but worst test error
     # This frequently need a bigger model.
     reload_model = None,  # Path to a saved model we want to start from.
     test_size = -1,  # If >0, we keep only this number of test example.
 
-    init_scale = 0.05
-    learning_rate = 0.0001
+    learning_rate = 0.001
     max_grad_norm = 5
-    num_layers = 2
-    num_steps = None
     hidden_size = 128
-    max_max_epoch = 5000
     keep_prob = 1
-    lr_decay = 1
-    batch_size = BATCH_SIZE
+    learning_rate_decay = 1
+
+
+class Flag(object):
+    first_training_epoch = True
+    first_validation_epoch = True
+    testing_epoch = False
 
 config = Options()
+flags =Flag()
 
 class LSTM_Model(object):
     def __init__(self):
@@ -82,116 +79,125 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-        '''
-        if is_training and config.keep_prob < 1:
-            lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
-                lstm_cell, output_keep_prob=config.keep_prob)
-        '''
 
-        with tf.variable_scope("RNN"):
+        self._inputs = tf.placeholder(tf.int64,[MAXLEN,BATCH_SIZE],name='embedded_inputs')
+        self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
+        self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
+
+        def ortho_weight(ndim):
+            np.random.seed(123)
+            W = np.random.randn(ndim, ndim)
+            u, s, v = np.linalg.svd(W)
+            return u.astype(np.float32)
+
+        with tf.variable_scope("RNN") as self.RNN_name_scope:
             # initialize a word_embedding scheme out of random
-            self.word_embedding = tf.get_variable('word_embedding',shape=[vocabulary_size, dim_proj],
-                                                  initializer=tf.random_uniform_initializer(minval=0,maxval=0.01))
+            np.random.seed(123)
+            random_embedding = 0.01 * np.random.rand(10000, dim_proj)
+            with tf.device("/cpu:0"):
+                word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
+                                              initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
+
+            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
+            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+            embedded_inputs = tf.reshape(embedded_inputs, [MAXLEN, BATCH_SIZE, dim_proj])
+
             # softmax weights and bias
-            self.softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
-                                             initializer=tf.random_normal_initializer(0, 0.1))
-            self.softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
+            np.random.seed(123)
+            softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
+            softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
+                                             initializer=tf.constant_initializer(softmax_w))
+            softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(0, tf.float32))
             # cell weights and bias
-            self.lstm_W = tf.get_variable("lstm_W",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
-            self.lstm_U = tf.get_variable("lstm_U",shape=[dim_proj,dim_proj*4],initializer=tf.random_normal_initializer(stddev=0.01))
-            self.lstm_b = tf.get_variable("lstm_b",shape=[dim_proj*4], initializer=tf.constant_initializer(0,dtype=tf.float32))
+            lstm_W = np.concatenate([ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj)], axis=1)
+
+            lstm_U = np.concatenate([ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj),
+                                     ortho_weight(dim_proj)], axis=1)
+            lstm_b = np.zeros((4 * 128,))
+
+            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+                                          initializer=tf.constant_initializer(lstm_W),trainable=False)
+            lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+                                          initializer=tf.constant_initializer(lstm_U))
+            lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
+
+        n_samples = BATCH_SIZE
+        self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
+        self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
+        self.h_outputs = []
+
+        for t in range(MAXLEN):
+            mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
+            inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
+            self.h, self.c = self.step(mask_slice,
+                                       tf.matmul(inputs_slice, self.lstm_W) + lstm_b,
+                                       self.h,
+                                       self.c)
+            self.h_outputs.append(tf.expand_dims(self.h, -1))
+
+        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
+
+        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+
+        pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
+        # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
+
+        offset = 1e-8
+        softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+        print(tf.trainable_variables())
+        print("Constructing graphs for cross entropy")
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
+
+        self.predictions = tf.argmax(softmax_probabilities, dimension=1)
+        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)),dtype=tf.float32))
+        """
+        grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
+                                                                 self.lstm_W,
+                                                                 self.lstm_U,
+                                                                 self.word_embedding,
+                                                                 softmax_w,
+                                                                 softmax_b])
+        self._train_op = opt.apply_gradients(grads_and_vars=grads_and_vars)
+        """
+        self._train_op = tf.train.AdadeltaOptimizer(self._lr).minimize(self.cross_entropy)
+        print("Finished constructing the graph")
+
+
+    def _slice(self, x, n, dim):
+        return x[:, n * dim: (n + 1) * dim]
+
+    def step(self, mask, input, h_previous, cell_previous):
+        with tf.variable_scope(self.RNN_name_scope, reuse=True):
+            lstm_U = tf.get_variable("lstm_U")
+        preactivation = tf.matmul(h_previous, lstm_U)
+        preactivation = preactivation + input
+
+        input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
+        forget_valve = tf.sigmoid(self._slice(preactivation, 1, dim_proj))
+        output_valve = tf.sigmoid(self._slice(preactivation, 2, dim_proj))
+        input_pressure = tf.tanh(self._slice(preactivation, 3, dim_proj))
+
+        cell_state = forget_valve * cell_previous + input_valve * input_pressure
+        cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
+            tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
+
+        h = output_valve * tf.tanh(cell_state)
+        h = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * h + tf.tile(tf.reshape((1. - mask), [-1, 1]),
+                                                                            [1, dim_proj]) * h_previous
+        return h, cell_state
 
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self._lr, lr_value))
-
-    def create_variables(self, embedded_inputs):
-        print("creating variables")
-        #self._initial_state = self.cell.zero_state(config.batch_size, tf.float32)
-        batch_size = config.batch_size
-        num_steps = config.num_steps
-        self._targets = tf.placeholder(tf.float32, [batch_size, 2],name='targets')
-        self._mask = tf.placeholder(tf.float32, [num_steps, batch_size],name='mask')
-
-        # if is_training and config.keep_prob < 1:
-        # inputs = tf.nn.dropout(inputs, config.keep_prob)
-
-        # Simplified version of tensorflow.models.rnn.rnn.py's rnn().
-        # This builds an unrolled LSTM for tutorial purposes only.
-        # In general, use the rnn() or state_saving_rnn() from rnn.py.
-        #
-        # The alternative version of the code below is:
-        #
-        # from tensorflow.models.rnn import rnn
-        # inputs = [tf.squeeze(input_, [1])
-        #           for input_ in tf.split(1, num_steps, inputs)]
-        # outputs, state = rnn.rnn(cell, inputs, initial_state=self._initial_state)
-
-        self.outputs = []
-
-        print("in create_variables")
-        #for time_step in range(num_steps):
-        #    if time_step > 0:
-        #        tf.get_variable_scope().reuse_variables()
-        self.h=tf.zeros([batch_size,dim_proj])
-        self.c=tf.zeros([batch_size,dim_proj])
-        for t in range(num_steps):
-            self.h, self.c = step(tf.slice(self._mask, [t, 0], [1, -1]),
-                                  tf.matmul(tf.squeeze(tf.slice(embedded_inputs, [t, 0, 0], [1, -1, -1])),self.lstm_W)+self.lstm_b,
-                                  self.h, self.c)
-            self.outputs.append(tf.expand_dims(self.h,-1))
-
-            #(cell_output, state) = self.cell(embedded_inputs[time_step, :, :], state)
-
-        self.outputs = tf.reduce_sum(tf.concat(2, self.outputs), 2) # (n_samples x dim_proj)
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean = tf.div(self.outputs,tiled_num_words_in_each_sentence)
-        #self.outputs now has dim (num_steps * batch_size x dim_proj)
-        #each small block of the matrix is a sentence's transformed output
-
-        # mean pooling
-        # accumulate along each sentence
-        '''
-        print("mean pooling starts")
-        segment_IDs = np.arange(batch_size).repeat(num_steps)
-        pool_sum = tf.segment_sum(self.outputs, segment_ids=segment_IDs)  # pool_sum has shape (batch_size x dim_proj)
-
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean = tf.div(pool_sum, tiled_num_words_in_each_sentence) # shape (batch_size x dim_proj)
-        print("mean pooling finished")
-        '''
-        offset = 1e-8
-        self.softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, self.softmax_w) + self.softmax_b)
-
-        print("computing the cost")
-        self._cost = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log( self.softmax_probabilities ), reduction_indices=1))
-        self.predictions = tf.argmax(self.softmax_probabilities, dimension=1)
-        self.correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets,1))
-        self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32))
-
-        print("finished computing the cost")
-
-        self._train_op = tf.train.AdadeltaOptimizer(learning_rate=self._lr).minimize(self._cost)
-
-        print("finished creating variables")
-
-    @property
-    def input_data(self):
-        return self._input_data
-    @property
-    def targets(self):
-        return self._targets
-    @property
-    def initial_state(self):
-        return self._initial_state
     @property
     def cost(self):
-        return self._cost
-    @property
-    def final_state(self):
-        return self._final_state
+        return self.cross_entropy
     @property
     def lr(self):
       return self._lr
@@ -201,81 +207,86 @@ class LSTM_Model(object):
 
 
 
-def run_epoch(session, m, data, is_training, verbose=False, validation_data=None):
-    """Runs the model on the given data."""
-    start_time = time.time()
-    costs = 0.0
-    iters = 0
+def run_epoch(session, m, data, is_training, verbose=True):
+    if is_training not in [True,False]:
+        raise ValueError("mode must be one of [True, False] but received ", is_training)
 
+    start_time = time.time()
+    total_cost = 0.0
+    num_samples_seen= 0
+    total_num_correct_predictions= 0
     #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
-
-    print("length of the data is: %d" %len(data[0]))
-    print("total number of batches is: %d" % total_num_batches)
+    total_num_reviews = len(data[0])
 
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    temporary_count = BATCH_SIZE * total_num_batches
+    """
+    if temporary_count < total_num_reviews:
+        total_num_batches += 1
+        x.append(data[0][temporary_count:])
+        labels.append(data[1][temporary_count:])
+    """
 
-    counter=0
-    for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-        counter+=1
-        #print("x is:")
-        #print(_x)
-        x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y)
-        config.num_steps = maxlen
-        embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
+    if is_training:
+        if flags.first_training_epoch:
+            flags.first_training_epoch= False
+            print("For training, total number of reviews is: %d" % total_num_reviews)
+            print("For training, total number of batches is: %d" % total_num_batches)
 
-        print("Creating variables %d th time " %mini_batch_number)
-        #with tf.device("/gpu:0"):
-        m.create_variables(embedded_inputs)
-        '''
-        print("Created variables %d th time!!! " % mini_batch_number)
-        print("Initializing all variables %d th time " % mini_batch_number)
-        '''
-        session.run(tf.initialize_all_variables())
-        #print("Initialized all variables %d th time!!! " % mini_batch_number)
-        if is_training is True:
-            #with tf.device("/gpu:0"):
-            cost, _, accuracy = session.run([m.cost, m._train_op, m.accuracy],
-                                     {m._targets: labels_mini,
-                                      m._mask: mask})
-            #print("adding cost to costs the cost")
-            costs += cost
-            iters += maxlen
-            print("training accuracy is: %f" %accuracy)
-            print(m.softmax_b.eval(session))
-            '''
-            if verbose and mini_batch_number % 10 == 0 and counter  is not 1:
-                print("VALIDATING ACCURACY\n")
-                print("%.3f perplexity: %.3f speed: %.0f wps" %
-                    (mini_batch_number * 1.0 / total_num_batches, np.exp(costs / iters),
-                    iters * m.batch_size / (time.time() - start_time)))
+        for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
+            # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
+            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
+            num_samples_seen += x_mini.shape[1]
+            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
+                                                     feed_dict={m._inputs: x_mini,
+                                                                m._targets: labels_mini,
+                                                                m._mask: mask})
+            print(m.lstm_W.eval())
+            total_num_correct_predictions+= num_correct_predictions
 
-                valid_perplexity = run_epoch(session, m, validation_data, is_training=False)
-                print("Epoch: %d Valid Perplexity: %.3f" % (1, valid_perplexity))
-                print("finished VALIDATING ACCURACY")
-                '''
-        else:
-            cost, accuracy = session.run([m.cost, m.accuracy],
-                                         {m.targets: labels_mini,
-                                          m._mask: mask})
-            costs += cost
-            iters += maxlen
+        avg_accuracy = total_num_correct_predictions/num_samples_seen
+        print("Traversed through %d samples." %num_samples_seen)
+        return np.asscalar(avg_accuracy)
 
-            print("validation/test accuracy is: %f" %accuracy)
+    else:
+        if flags.first_validation_epoch or flags.testing_epoch:
+            flags.first_validation_epoch= False
+            flags.testing_epoch= False
+            print("For validation, total number of reviews is: %d" % total_num_reviews)
+            print("For validation, total number of batches is: %d" % total_num_batches)
 
-    return np.exp(costs / iters)
+        for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
+            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
+            num_samples_seen += x_mini.shape[1]
+            cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
+                                                        feed_dict={m._inputs: x_mini,
+                                                                   m._targets: labels_mini,
+                                                                   m._mask: mask})
+            total_cost += cost
+            total_num_correct_predictions += num_correct_predictions
+        accuracy= total_num_correct_predictions/num_samples_seen
+        print("total cost is %.4f" %total_cost)
+        return np.asscalar(accuracy)
 
+
+# deprecated, since this doesn't seem to use gpu?
 def words_to_embedding(word_embedding, word_matrix):
     maxlen = word_matrix.shape[0]
     n_samples = word_matrix.shape[1]
     print("in words_to_embedding, maxlen= %d , n_samples= %d" %(maxlen ,n_samples))
 
-    unrolled_matrix = tf.reshape(word_matrix,[-1])
-
+    unrolled_matrix = np.reshape(word_matrix,[-1])
+    dim0 = maxlen * n_samples
+    one_hot=np.zeros((dim0, VOCABULARY_SIZE),dtype=np.float32)
+    for i in range(dim0):
+        one_hot[i, int(unrolled_matrix[i])] = 1
+    '''
     on_value = float(1)
     off_value = float(0)
-    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.vocabulary_size, on_value=on_value, off_value=off_value, axis=1)
+    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.VOCABULARY_SIZE, on_value=on_value, off_value=off_value, axis=1)
+    '''
     embedded_words = tf.matmul(one_hot, word_embedding)
     embedded_words = tf.reshape(embedded_words, [maxlen, n_samples, dim_proj])
     print("embedded_words has dimension = (%d x %d x %d) "%(maxlen, n_samples, dim_proj))
@@ -287,25 +298,37 @@ def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
     return index_list[:_batch_size]
 
 def main():
-    train_data, valid_data, test_data = load_data(n_words=vocabulary_size, validation_portion=0.05,maxlen=100)
-    session=tf.Session()
-    #with tf.Graph().as_default(), tf.Session() as session:
+    train_data, validation_data, test_data = load_data(n_words=VOCABULARY_SIZE,
+                                                       validation_portion=VALIDATION_PORTION,
+                                                       maxlen=MAXLEN)
+    GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
+    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
     with session.as_default():
-        initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
         m = LSTM_Model()
-
-        for i in range(config.max_max_epoch):
-            #lr_decay = config.lr_decay ** max(i - config.max_epoch, 0.0)
-            #m.assign_lr(session, config.learning_rate * lr_decay)
+        print("Initializing all variables")
+        session.run(tf.initialize_all_variables())
+        print("Initialized all variables")
+        for i in range(config.max_epoch):
+            epoch_number= i+1
+            print("\nTraining")
             m.assign_lr(session, config.learning_rate)
-            print("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-            train_perplexity = run_epoch(session, m, train_data, is_training=True, verbose=True,validation_data=valid_data)
-            print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-            #valid_perplexity = run_epoch(session, mvalid, valid_data)
-            #print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
-        print("FINISHED TRAINING\n")
-        test_perplexity = run_epoch(session, m, test_data, is_training=False)
-        print("Test Perplexity: %.3f" % test_perplexity)
+            print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
+            average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
+            print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
+
+            if epoch_number%5 ==0:
+                print("\nValidating")
+                validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
+                print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
+                if validation_accuracy < ACCURACY_THREASHOLD:
+                    print("Validation accuracy reached the threashold. Breaking")
+                    break
+
+        print("Testing")
+        global testing_epoch_flag
+        testing_epoch_flag=True
+        testing_accuracy = run_epoch(session, m, test_data, is_training=False)
+        print("Testing accuracy is: %.4f" %testing_accuracy)
 
 
 if __name__ == "__main__":
