@@ -48,8 +48,8 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
     num_layers_to_pad = MAXLEN_to_pad_to - maxlen
 
     # columns are the samples in R^maxlen
-    x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
-    x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
+    x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int64)
+    x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int64)
     for idx, s in enumerate(seqs):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.
