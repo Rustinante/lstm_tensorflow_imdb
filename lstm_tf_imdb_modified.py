@@ -234,7 +234,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
     if is_training:
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
-            x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
+            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
             num_samples_seen += x_mini.shape[1]
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini,
@@ -248,7 +248,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
     else:
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
-            x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
+            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
             num_samples_seen += x_mini.shape[1]
             cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
                                                         feed_dict={m._inputs: x_mini,

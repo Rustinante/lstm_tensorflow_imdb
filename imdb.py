@@ -43,10 +43,6 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
             return None, None, None
 
     n_samples = len(seqs)
-    maxlen = np.max(lengths)
-
-    num_layers_to_pad = MAXLEN_to_pad_to - maxlen
-
     # columns are the samples in R^maxlen
     x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int64)
     x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
@@ -55,10 +51,8 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
         x_mask[:lengths[idx], idx] = 1.
 
     # return the labels as one hot
-
     labels = binary_one_hot(labels)
-
-    return x, x_mask, labels, maxlen
+    return x, x_mask, labels
 
 
 def binary_one_hot(x):
