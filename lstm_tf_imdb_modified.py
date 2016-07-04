@@ -241,20 +241,22 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask})
             total_num_correct_predictions+= num_correct_predictions
-            print(total_num_correct_predictions.shape)
+            print(type(total_num_correct_predictions))
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
-
         return np.asscalar(avg_accuracy)
 
     else:
-        cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
-                                                    feed_dict={m._inputs: x_mini,
-                                                               m._targets: labels_mini,
-                                                               m._mask: mask})
-        total_cost += cost
-        total_num_correct_predictions += num_correct_predictions
+        for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
+            x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
+            num_samples_seen += x_mini.shape[1]
+            cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
+                                                        feed_dict={m._inputs: x_mini,
+                                                                   m._targets: labels_mini,
+                                                                   m._mask: mask})
+            total_cost += cost
+            total_num_correct_predictions += num_correct_predictions
         accuracy= total_num_correct_predictions/num_samples_seen
         print("total cost is %.4f" %total_cost)
         return np.asscalar(accuracy)
@@ -295,7 +297,9 @@ def main():
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
     with session.as_default():
         m = LSTM_Model()
+        print("Initializing all variables")
         session.run(tf.initialize_all_variables())
+        print("Initialized all variables")
         for i in range(config.max_epoch):
             epoch_number= i+1
             print("Training")
