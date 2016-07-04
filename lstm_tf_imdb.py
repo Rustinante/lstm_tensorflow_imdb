@@ -298,7 +298,8 @@ def main():
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
     with session.as_default():
-        m = LSTM_Model()
+        with tf.variable_scope("model"):
+            m = LSTM_Model()
 
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
@@ -330,7 +331,7 @@ def main():
         global testing_epoch_flag
         testing_epoch_flag=True
         config.MAXLEN = 2820
-        tf.get_variable_scope().reuse_variables():
+        with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
