@@ -85,14 +85,14 @@ class LSTM_Model(object):
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
         def ortho_weight(ndim):
-            np.random.seed(123)
+            #np.random.seed(123)
             W = np.random.randn(ndim, ndim)
             u, s, v = np.linalg.svd(W)
             return u.astype(np.float32)
 
         with tf.variable_scope("RNN") as self.RNN_name_scope:
             # initialize a word_embedding scheme out of random
-            np.random.seed(123)
+            #np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
             with tf.device("/cpu:0"):
                 word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
@@ -103,7 +103,7 @@ class LSTM_Model(object):
             embedded_inputs = tf.reshape(embedded_inputs, [MAXLEN, BATCH_SIZE, dim_proj])
 
             # softmax weights and bias
-            np.random.seed(123)
+            #np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
             softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
                                              initializer=tf.constant_initializer(softmax_w))
@@ -207,19 +207,14 @@ def run_epoch(session, m, data, is_training, verbose=True):
     total_cost = 0.0
     num_samples_seen= 0
     total_num_correct_predictions= 0
-    #training_index = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
+    list_of_training_index_list = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
     total_num_reviews = len(data[0])
 
-    x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    temporary_count = BATCH_SIZE * total_num_batches
-    """
-    if temporary_count < total_num_reviews:
-        total_num_batches += 1
-        x.append(data[0][temporary_count:])
-        labels.append(data[1][temporary_count:])
-    """
+    #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    x      = [data[0][l] for l in list_of_training_index_list]
+    labels = [data[1][l] for l in list_of_training_index_list]
 
     if is_training:
         if flags.first_training_epoch:
@@ -284,10 +279,13 @@ def words_to_embedding(word_embedding, word_matrix):
     print("embedded_words has dimension = (%d x %d x %d) "%(maxlen, n_samples, dim_proj))
     return embedded_words
 
-def get_random_minibatches_index(num_training_data, _batch_size=BATCH_SIZE):
-    index_list=np.arange(num_training_data)
-    np.random.shuffle(index_list)
-    return index_list[:_batch_size]
+def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuffle=True):
+    index_list=np.arange(num_training_data,dtype=np.int32)
+    if shuffle:
+        np.random.shuffle(index_list)
+    total_num_batches = num_training_data//batch_size
+    result=[index_list[batch_size * i : batch_size*(i+1)] for i in range(total_num_batches)]
+    return result
 
 def main():
     train_data, validation_data, test_data = load_data(n_words=VOCABULARY_SIZE,
