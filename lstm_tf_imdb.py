@@ -71,10 +71,11 @@ class Flag(object):
     first_validation_epoch = True
     testing_epoch = False
 
-
+config = Options()
+flags = Flag()
 
 class LSTM_Model(object):
-    def __init__(self, config, is_training=True):
+    def __init__(self, is_training=True):
         #number of LSTM units, in this case it is dim_proj=128
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
@@ -290,8 +291,7 @@ def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuff
     return result
 
 def main():
-    config = Options()
-    flags = Flag()
+
     train_data, validation_data, test_data = load_data(n_words=config.VOCABULARY_SIZE,
                                                        validation_portion=config.VALIDATION_PORTION,
                                                        maxlen=config.MAXLEN)
@@ -300,7 +300,7 @@ def main():
 
     with session.as_default():
         with tf.variable_scope("model"):
-            m = LSTM_Model(config)
+            m = LSTM_Model()
 
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
@@ -333,7 +333,7 @@ def main():
         testing_epoch_flag=True
         config.MAXLEN = 2820
         with tf.variable_scope("model",reuse=True):
-            m_test = LSTM_Model(config, is_training=False)
+            m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
