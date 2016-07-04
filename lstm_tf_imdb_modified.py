@@ -153,7 +153,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
 
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        self.num_correct_predictions = tf.equal(self.predictions, tf.argmax(self._targets, 1))
+        self.num_correct_predictions = tf.reduce_sum(tf.equal(self.predictions, tf.argmax(self._targets, 1)))
         self.accuracy = tf.reduce_mean(tf.cast(self.num_correct_predictions, tf.float32))
         """
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
@@ -241,8 +241,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask})
             total_num_correct_predictions+= num_correct_predictions
-            print(mini_batch_number)
-            print(total_num_correct_predictions.shape)
+
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
 
