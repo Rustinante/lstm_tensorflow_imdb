@@ -89,8 +89,8 @@ class LSTM_Model(object):
             # initialize a word_embedding scheme out of random
             np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
-
-            word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
+            with tf.device("/cpu:0")
+                word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
             unrolled_inputs=tf.reshape(self._inputs,[1,-1])
