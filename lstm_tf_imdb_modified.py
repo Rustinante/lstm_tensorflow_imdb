@@ -153,7 +153,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
 
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        self.num_correct_predictions = tf.reduce_sum(tf.equal(self.predictions, tf.argmax(self._targets, 1)))
+        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)),dtype=tf.float32))
         self.accuracy = tf.reduce_mean(tf.cast(self.num_correct_predictions, tf.float32))
         """
         grads_and_vars=opt.compute_gradients(self.cross_entropy,[self.lstm_b,
