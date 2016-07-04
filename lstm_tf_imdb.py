@@ -73,8 +73,8 @@ class Flag(object):
 config = Options()
 flags =Flag()
 
-class LSTM_Model(object, is_training=True):
-    def __init__(self):
+class LSTM_Model(object):
+    def __init__(self, is_training=True):
         #number of LSTM units, in this case it is dim_proj=128
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
