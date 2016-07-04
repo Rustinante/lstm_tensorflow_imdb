@@ -83,9 +83,10 @@ class LSTM_Model(object):
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         with tf.device("/cpu:0"):
-            self._embedded_inputs = tf.placeholder(tf.float32,[MAXLEN,16,128],name='embedded_inputs')
+            self._inputs = tf.placeholder(tf.float32,[MAXLEN,BATCH_SIZE],name='embedded_inputs')
             self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
             self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
+
 
         def ortho_weight(ndim):
             np.random.seed(123)
@@ -98,8 +99,13 @@ class LSTM_Model(object):
             np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
             with tf.device("/cpu:0"):
-                self.word_embedding = tf.get_variable('word_embedding', shape=[vocabulary_size, dim_proj],
+                word_embedding = tf.get_variable('word_embedding', shape=[vocabulary_size, dim_proj],
                                                   initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
+
+                unrolled_inputs=tf.reshape(self._inputs,[1,-1])
+                embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+                embedded_inputs = tf.reshape(embedded_inputs, [MAXLEN, BATCH_SIZE, dim_proj])
+
             # softmax weights and bias
             np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
@@ -125,14 +131,14 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        n_samples = 16
+        n_samples = BATCH_SIZE
         self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
 
         for t in range(MAXLEN):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
-            inputs_slice = tf.squeeze(tf.slice(self._embedded_inputs,[t,0,0],[1,-1,-1]))
+            inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
             self.h, self.c = self.step(mask_slice,
                                        tf.matmul(inputs_slice, lstm_W) + lstm_b,
                                        self.h,
@@ -235,15 +241,13 @@ def run_epoch(session, m, data, is_training, verbose=False, validation_data=None
     counter=0
     for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
         counter+=1
-        print("x is:")
-        print(_x)
         x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
         # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
-        embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
+        #embedded_inputs = words_to_embedding(m.word_embedding, x_mini)
 
         if is_training is True:
             cost, accuracy, _ = session.run([m.cost ,m.accuracy,m.train_op],
-                                            {m._embedded_inputs: embedded_inputs.eval(),
+                                            {m._inputs: x_mini,
                                              m._targets: labels_mini,
                                              m._mask: mask})
             costs += cost
