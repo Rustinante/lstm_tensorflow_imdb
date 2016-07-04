@@ -123,7 +123,7 @@ class LSTM_Model(object):
 
             self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
-            lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            self.lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
@@ -174,9 +174,9 @@ class LSTM_Model(object):
         return x[:, n * dim: (n + 1) * dim]
 
     def step(self, mask, input, h_previous, cell_previous):
-        with tf.variable_scope(self.RNN_name_scope, reuse=True):
-            lstm_U = tf.get_variable("lstm_U")
-        preactivation = tf.matmul(h_previous, lstm_U)
+        #with tf.variable_scope(self.RNN_name_scope, reuse=True):
+        #    lstm_U = tf.get_variable("lstm_U")
+        preactivation = tf.matmul(h_previous, self.lstm_U)
         preactivation = preactivation + input
 
         input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
