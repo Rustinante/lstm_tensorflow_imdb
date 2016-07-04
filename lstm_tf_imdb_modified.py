@@ -231,10 +231,12 @@ def run_epoch(session, m, data, is_training, verbose=True):
     x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     temporary_count = BATCH_SIZE * total_num_batches
+    """
     if temporary_count < total_num_reviews:
         total_num_batches += 1
         x.append(data[0][temporary_count:])
         labels.append(data[1][temporary_count:])
+    """
 
     print("For %s, total number of reviews is: %d" % ('training' if is_training else 'validation/testing',total_num_reviews))
     print("For %s, total number of batches is: %d" % ('training' if is_training else 'validation/testing',total_num_batches))
@@ -245,7 +247,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             x_mini, mask, labels_mini, maxlen = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
             num_samples_seen += x_mini.shape[1]
             num_correct_predictions, _ = session.run([m.num_correct_predictions,m.train_op],
-                            {m._inputs: x_mini,
+                             feed_dict={m._inputs: x_mini,
                              m._targets: labels_mini,
                              m._mask: mask})
             total_num_correct_predictions+= num_correct_predictions
@@ -256,7 +258,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
     else:
         cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
-                                        {m._inputs: x_mini,
+                                         feed_dict={m._inputs: x_mini,
                                          m._targets: labels_mini,
                                          m._mask: mask})
         total_cost += cost
