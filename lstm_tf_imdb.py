@@ -214,12 +214,11 @@ def run_epoch(session, m, data, is_training, verbose=True):
     print(list_of_training_index_list)
     #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    x=[data[0][l] for l in list_of_training_index_list]
-    labels=[data[1][l] for l in list_of_training_index_list]
-
-    #for l in list_of_training_index_list:
-    #    x.append([data[0][i] for i in l])
-    #    labels.append((data[1][i] for i in l))
+    x=[]
+    labels=[]
+    for l in list_of_training_index_list:
+        x.append([data[0][i] for i in l])
+        labels.append((data[1][i] for i in l))
 
     if is_training:
         if flags.first_training_epoch:
@@ -304,21 +303,24 @@ def main():
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
         print("Initialized all variables")
-        for i in range(config.max_epoch):
-            epoch_number= i+1
-            print("\nTraining")
-            m.assign_lr(session, config.learning_rate)
-            print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
-            average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
-            print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
+        try:
+            for i in range(config.max_epoch):
+                epoch_number= i+1
+                print("\nTraining")
+                m.assign_lr(session, config.learning_rate)
+                print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
+                average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
+                print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
 
-            if epoch_number%5 ==0:
-                print("\nValidating")
-                validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
-                print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
-                if validation_accuracy < ACCURACY_THREASHOLD:
-                    print("Validation accuracy reached the threashold. Breaking")
-                    break
+                if epoch_number%5 ==0:
+                    print("\nValidating")
+                    validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
+                    print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
+                    if validation_accuracy < ACCURACY_THREASHOLD:
+                        print("Validation accuracy reached the threashold. Breaking")
+                        break
+        except KeyboardInterrupt:
+            pass
 
         print("Testing")
         global testing_epoch_flag
