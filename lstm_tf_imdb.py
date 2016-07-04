@@ -36,9 +36,8 @@ import tensorflow as tf
 from imdb import *
 
 
-VALIDATION_PORTION= 0.05
+
 dim_proj= 128
-VOCABULARY_SIZE = 10000
 BATCH_SIZE=16
 ACCURACY_THREASHOLD= 1e-5
 np.random.seed(123)
@@ -47,10 +46,11 @@ np.random.seed(123)
 
 class Options(object):
     MAXLEN = 100
+    VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 100
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
-    VOCABULARY_SIZE = 10000  # Vocabulary size
+    config.VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
     saveFreq = 1110  # Save the parameters after every saveFreq updates
     valid_batch_size = 64  # The batch size used for validation/test set.
@@ -96,7 +96,7 @@ class LSTM_Model(object):
             #np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
             with tf.device("/cpu:0"):
-                word_embedding = tf.get_variable('word_embedding', shape=[VOCABULARY_SIZE, dim_proj],
+                word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
             unrolled_inputs=tf.reshape(self._inputs,[1,-1])
@@ -268,7 +268,7 @@ def words_to_embedding(word_embedding, word_matrix):
 
     unrolled_matrix = np.reshape(word_matrix,[-1])
     dim0 = maxlen * n_samples
-    one_hot=np.zeros((dim0, VOCABULARY_SIZE),dtype=np.float32)
+    one_hot=np.zeros((dim0, config.VOCABULARY_SIZE),dtype=np.float32)
     for i in range(dim0):
         one_hot[i, int(unrolled_matrix[i])] = 1
     '''
@@ -291,8 +291,8 @@ def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuff
     return result
 
 def main():
-    train_data, validation_data, test_data = load_data(n_words=VOCABULARY_SIZE,
-                                                       validation_portion=VALIDATION_PORTION,
+    train_data, validation_data, test_data = load_data(n_words=config.VOCABULARY_SIZE,
+                                                       validation_portion=config.VALIDATION_PORTION,
                                                        maxlen=config.MAXLEN)
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
@@ -330,7 +330,8 @@ def main():
         global testing_epoch_flag
         testing_epoch_flag=True
         config.MAXLEN = 2820
-        m_test = LSTM_Model(is_training=False)
+        tf.get_variable_scope().reuse_variables()
+            m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
 
