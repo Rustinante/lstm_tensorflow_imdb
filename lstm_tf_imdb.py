@@ -330,7 +330,7 @@ def main():
         global testing_epoch_flag
         testing_epoch_flag=True
         config.MAXLEN = 2820
-        tf.get_variable_scope().reuse_variables()
+        tf.get_variable_scope().reuse_variables():
             m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
         print("Testing accuracy is: %.4f" %testing_accuracy)
