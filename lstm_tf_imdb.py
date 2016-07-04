@@ -287,6 +287,7 @@ def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuff
     index_list=np.arange(num_training_data,dtype=np.int32)
     if shuffle:
         np.random.shuffle(index_list)
+    index_list=index_list.tolist()
     total_num_batches = num_training_data//batch_size
     result=[index_list[batch_size * i : batch_size*(i+1)] for i in range(total_num_batches)]
     return result
