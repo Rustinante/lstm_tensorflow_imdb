@@ -214,7 +214,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     print(list_of_training_index_list)
     #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
     #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    x=[]
+    #x=[data[0][l] for l in list_of_training_index_list]
+    #labels=[data[1][l] for l in list_of_training_index_list]
     labels=[]
     for l in list_of_training_index_list:
         x.append([data[0][i] for i in l])
@@ -226,7 +227,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For training, total number of reviews is: %d" % total_num_reviews)
             print("For training, total number of batches is: %d" % total_num_batches)
 
-        for (_x, _y) in zip(x,labels):
+        for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             # x_mini and mask both have the shape of ( MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=MAXLEN)
             num_samples_seen += x_mini.shape[1]
