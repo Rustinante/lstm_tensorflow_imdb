@@ -241,7 +241,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask})
             total_num_correct_predictions+= num_correct_predictions
-            print(type(total_num_correct_predictions))
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
