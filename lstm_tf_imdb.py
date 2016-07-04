@@ -298,7 +298,7 @@ def main():
     new_test_features=[]
     new_test_labels=[]
     #right now we only consider sentences of length less than config.max_sentence_length_for_testing
-    for feature, label in test_data:
+    for feature, label in zip(test_data[0],test_data[1]):
         if len(feature)<config.max_sentence_length_for_testing:
             new_test_features.append(feature)
             new_test_labels.append(label)
