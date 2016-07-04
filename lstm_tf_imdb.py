@@ -47,7 +47,7 @@ np.random.seed(123)
 
 class Options(object):
     patience = 10
-    max_epoch = 5000
+    max_epoch = 100
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -296,12 +296,13 @@ def main():
                                                        maxlen=MAXLEN)
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
-    #saver = tf.train.Saver()
+
     with session.as_default():
         m = LSTM_Model()
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
         print("Initialized all variables")
+        saver = tf.train.Saver()
         try:
             for i in range(config.max_epoch):
                 epoch_number= i+1
@@ -318,9 +319,9 @@ def main():
                     if validation_accuracy < ACCURACY_THREASHOLD:
                         print("Validation accuracy reached the threashold. Breaking")
                         break
-                   # if epoch_number%10 == 0:
-                       # path = saver.save(session,"tmp/params_at_epoch.ckpt",global_step=epoch_number )
-                       # print("Saved parameters to %s" %path)
+                    if epoch_number%10 == 0:
+                        path = saver.save(session,"/tmp/params_at_epoch.ckpt",global_step=epoch_number )
+                        print("Saved parameters to %s" %path)
         except KeyboardInterrupt:
             pass
 
