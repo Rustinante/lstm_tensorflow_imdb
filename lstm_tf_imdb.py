@@ -50,7 +50,7 @@ class Options(object):
     patience = 10
     max_epoch = 100
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
-    config.VOCABULARY_SIZE = 10000  # Vocabulary size
+    VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
     saveFreq = 1110  # Save the parameters after every saveFreq updates
     valid_batch_size = 64  # The batch size used for validation/test set.
