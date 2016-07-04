@@ -244,6 +244,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
+        print(avg_accuracy.shape)
         return np.asscalar(avg_accuracy)
 
     else:
@@ -255,7 +256,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
         total_num_correct_predictions += num_correct_predictions
         accuracy= total_num_correct_predictions/num_samples_seen
         print("total cost is %.4f" %total_cost)
-        print(accuracy.shape)
         return np.asscalar(accuracy)
 
 
