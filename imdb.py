@@ -7,7 +7,7 @@ import os
 
 import numpy as np
 
-np.random.seed(123)
+#np.random.seed(123)
 
 
 def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
