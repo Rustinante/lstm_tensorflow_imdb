@@ -85,7 +85,8 @@ class LSTM_Model(object):
             self._inputs = tf.placeholder(tf.int64,[config.CELL_MAXLEN, BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-
+        self.h = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj])
+        self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj])
         def ortho_weight(ndim):
             #np.random.seed(123)
             W = np.random.randn(ndim, ndim)
@@ -130,9 +131,8 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = BATCH_SIZE
-        if self._carry_on_recurrence == False:
-            self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
-            self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
+        if not self._carry_on_recurrence:
+
         self.h_outputs = []
 
         for t in range(config.CELL_MAXLEN):
@@ -234,10 +234,14 @@ def run_epoch(session, m, data, is_training, verbose=True):
             # x_mini and mask both have the shape of ( config.DATA_MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.DATA_MAXLEN)
             num_samples_seen += x_mini.shape[1]
+            h = np.zeros([n_samples, dim_proj], dtype=np.float32)
+            c = np.zeros([n_samples, dim_proj], dtype=np.float32)
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini,
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask,
+                                                                m.h: h,
+                                                                m.c: c,
                                                                 m._carry_on_recurrence: False})
             #print(m.lstm_W.eval())
             total_num_correct_predictions+= num_correct_predictions
