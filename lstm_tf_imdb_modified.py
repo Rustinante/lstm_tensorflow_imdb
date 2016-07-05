@@ -133,39 +133,39 @@ class LSTM_Model(object):
         n_samples = BATCH_SIZE
         if not self._carry_on_recurrence:
 
-        self.h_outputs = []
+            self.h_outputs = []
 
-        for t in range(config.CELL_MAXLEN):
-            mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
-            inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
-
-
+            for t in range(config.CELL_MAXLEN):
+                mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
+                inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
 
-            self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
-                                       self.h,
-                                       self.c)
-            self.h_outputs.append(tf.expand_dims(self.h, -1))
 
-        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+                self.h, self.c = self.step(mask_slice,
+                                           tf.matmul(inputs_slice, lstm_W) + lstm_b,
+                                           self.h,
+                                           self.c)
+                self.h_outputs.append(tf.expand_dims(self.h, -1))
 
-        pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
-        # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
+            self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
-        offset = 1e-8
-        softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
-        self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
-        print("Constructing graphs for cross entropy")
-        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
-        if is_training:
-            print("Trainable variables: ", tf.trainable_variables())
-            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
-        print("Finished constructing the graph")
+            num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+            tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+
+            pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
+            # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
+
+            offset = 1e-8
+            softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+            self.predictions = tf.argmax(softmax_probabilities, dimension=1)
+            self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+            print("Constructing graphs for cross entropy")
+            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
+            if is_training:
+                print("Trainable variables: ", tf.trainable_variables())
+                self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+            print("Finished constructing the graph")
 
 
     def _slice(self, x, n, dim):
