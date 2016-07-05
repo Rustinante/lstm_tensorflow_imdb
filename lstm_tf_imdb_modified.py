@@ -118,7 +118,7 @@ class LSTM_Model(object):
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
         self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
-        self.h_outputs.append(tf.expand_dims(h, -1))
+        self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         for t in range(1,config.CELL_MAXLEN):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
