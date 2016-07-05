@@ -248,9 +248,9 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
                 labels_mini_segments.append(labels_mini[cell_maxlen * i : cell_maxlen*(i+1)])
 
-            first_segment_flat=True
+            first_segment_flag=True
             for i in range(num_times_to_feed-1):
-                first_segment_flat = False
+                first_segment_flag = False
                 if i ==0:
                     h_outputs, c_outputs, _ = session.run([m.h_outputs, m.c, m.train_op],
                                                          feed_dict={m._inputs: x_mini_segments[i],
@@ -267,7 +267,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                      m.h: h_outputs.eval(),
                                                                      m.c: c_outputs.eval(),
                                                                      m.num_words_in_each_sentence: num_words_in_each_sentence})
-            if first_segment_flat:
+            if first_segment_flag:
                 num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                          feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                     m._targets: labels_mini_segments[num_times_to_feed-1],
@@ -316,22 +316,42 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i: cell_maxlen * (i + 1)])
                 labels_mini_segments.append(labels_mini[cell_maxlen * i: cell_maxlen * (i + 1)])
 
+            first_segment_flag=True
             for i in range(num_times_to_feed - 1):
-                h_outputs, c_outputs = session.run([m.h_outputs, m.c],
-                                                    feed_dict={m._inputs: x_mini_segments[i],
-                                                             m._targets: labels_mini_segments[i],
-                                                             m._mask: mask_segments[i],
-                                                             m.h: h_outputs,
-                                                             m.c: c_outputs,
-                                                             m.num_words_in_each_sentence: num_words_in_each_sentence})
-
-            cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
-                                                     feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
+                first_segment_flag=False
+                if i==0:
+                    h_outputs, c_outputs = session.run([m.h_outputs, m.c],
+                                                        feed_dict={m._inputs: x_mini_segments[i],
+                                                                 m._targets: labels_mini_segments[i],
+                                                                 m._mask: mask_segments[i],
+                                                                 m.h: h_outputs,
+                                                                 m.c: c_outputs,
+                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
+                else:
+                    h_outputs, c_outputs = session.run([m.h_outputs, m.c],
+                                                       feed_dict={m._inputs: x_mini_segments[i],
+                                                                  m._targets: labels_mini_segments[i],
+                                                                  m._mask: mask_segments[i],
+                                                                  m.h: h_outputs.eval(),
+                                                                  m.c: c_outputs.eval(),
+                                                                  m.num_words_in_each_sentence: num_words_in_each_sentence})
+            if first_segment_flag:
+                cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
+                                                         feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
+                                                                    m._targets: labels_mini_segments[num_times_to_feed - 1],
+                                                                    m._mask: mask_segments[num_times_to_feed - 1],
+                                                                    m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                                    m.h: h_outputs,
+                                                                    m.c: c_outputs})
+            else:
+                cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
+                                                            feed_dict={
+                                                                m._inputs: x_mini_segments[num_times_to_feed - 1],
                                                                 m._targets: labels_mini_segments[num_times_to_feed - 1],
                                                                 m._mask: mask_segments[num_times_to_feed - 1],
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                m.h: h_outputs,
-                                                                m.c: c_outputs})
+                                                                m.h: h_outputs.eval(),
+                                                                m.c: c_outputs.eval()})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
 
