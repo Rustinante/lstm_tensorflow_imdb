@@ -206,6 +206,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     cell_maxlen = config.CELL_MAXLEN
     h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
     c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
+    h_outputs=h_0
+    c_outputs=c_0
     if is_training:
         if flags.first_training_epoch:
             flags.first_training_epoch= False
@@ -230,41 +232,23 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 x_mini_segments.append(x_mini[cell_maxlen * i : cell_maxlen*(i+1)])
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
 
-            first_segment_flag=True
             for i in range(num_times_to_feed-1):
-                first_segment_flag = False
-                if i ==0:
-                    h_outputs, c_outputs, _ = session.run([m.h_outputs, m.c, m.train_op],
-                                                         feed_dict={m._inputs: x_mini_segments[i],
-                                                                    m._targets: labels_mini,
-                                                                    m._mask: mask_segments[i],
-                                                                    m.h_0: h_0,
-                                                                    m.c_0: c_0,
-                                                                    m.num_words_in_each_sentence: num_words_in_each_sentence})
-                else:
-                    h_outputs, c_outputs, _ = session.run([m.h_outputs, m.c, m.train_op],
-                                                          feed_dict={m._inputs: x_mini_segments[i],
-                                                                     m._targets: labels_mini,
-                                                                     m._mask: mask_segments[i],
-                                                                     m.h_0: h_outputs,
-                                                                     m.c_0: c_outputs,
-                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence})
-            if first_segment_flag:
-                num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
-                                                         feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
-                                                                    m._targets: labels_mini,
-                                                                    m._mask: mask_segments[num_times_to_feed-1],
-                                                                    m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h_0: h_0,
-                                                                    m.c_0: c_0})
-            else:
-                num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
-                                                         feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
-                                                                    m._targets: labels_mini,
-                                                                    m._mask: mask_segments[num_times_to_feed - 1],
-                                                                    m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h_0: h_outputs,
-                                                                    m.c_0: c_outputs})
+                h_outputs, c_outputs, _ = session.run([m.h_outputs, m.c, m.train_op],
+                                                     feed_dict={m._inputs: x_mini_segments[i],
+                                                                m._targets: labels_mini,
+                                                                m._mask: mask_segments[i],
+                                                                m.h_0: h_outputs,
+                                                                m.c_0: c_outputs,
+                                                                m.num_words_in_each_sentence: num_words_in_each_sentence})
+
+            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
+                                                     feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
+                                                                m._targets: labels_mini,
+                                                                m._mask: mask_segments[num_times_to_feed-1],
+                                                                m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                                m.h_0: h_outputs,
+                                                                m.c_0: c_outputs})
+
 
             total_num_correct_predictions+= num_correct_predictions
 
