@@ -132,16 +132,22 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         self.h_outputs = []
-
-        for t in range(config.CELL_MAXLEN):
+        mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
+        inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
+        h, c = self.step(mask_slice,
+                                   tf.matmul(inputs_slice, lstm_W) + lstm_b,
+                                   self.h,
+                                   self.c)
+        self.h_outputs.append(tf.expand_dims(self.h, -1))
+        for t in range(config.CELL_MAXLEN-1):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
-            self.h, self.c = self.step(mask_slice,
+            h, c = self.step(mask_slice,
                                        tf.matmul(inputs_slice, lstm_W) + lstm_b,
-                                       self.h,
-                                       self.c)
-            self.h_outputs.append(tf.expand_dims(self.h, -1))
+                                       h,
+                                       c)
+            self.h_outputs.append(tf.expand_dims(h, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
