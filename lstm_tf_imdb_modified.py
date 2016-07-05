@@ -217,6 +217,10 @@ def run_epoch(session, m, data, is_training, verbose=True):
         labels.append([data[1][i] for i in l])
 
     cell_maxlen = config.CELL_MAXLEN
+    h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
+    c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
+    h_outputs = h_0
+    c_outputs = c_0
     if is_training:
         if flags.first_training_epoch:
             flags.first_training_epoch= False
@@ -242,10 +246,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
                 labels_mini_segments.append(labels_mini[cell_maxlen * i : cell_maxlen*(i+1)])
 
-            h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
-            c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
-            h_outputs = h_0
-            c_outputs = c_0
+
             for i in range(num_times_to_feed-1):
                 h_outputs, c_outputs, _ = session.run([m.h_outputs, m.c, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[i],
