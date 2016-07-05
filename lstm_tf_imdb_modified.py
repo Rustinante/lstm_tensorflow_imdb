@@ -84,9 +84,9 @@ class LSTM_Model(object):
             self._inputs = tf.placeholder(tf.int64,[config.CELL_MAXLEN, BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-        self.h = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj])
-        self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj])
-        self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE])
+        self.h = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj],name='h')
+        self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
+        self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
 
         def ortho_weight(ndim):
             #np.random.seed(123)
@@ -252,7 +252,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._targets: labels_mini_segments[i],
                                                                 m._mask: mask_segments[i],
                                                                 m.h: h_outputs,
-                                                                m.c: c_outputs})
+                                                                m.c: c_outputs,
+                                                                m.num_words_in_each_sentence: num_words_in_each_sentence})
 
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
