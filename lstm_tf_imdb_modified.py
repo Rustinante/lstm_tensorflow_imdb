@@ -86,7 +86,7 @@ class LSTM_Model(object):
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
         self.h = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj])
         self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj])
-        self.num_words_in_each_sentence = tf.placeholder(dtype=tf.int32, shape=[1, BATCH_SIZE])
+        self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE])
 
         def ortho_weight(ndim):
             #np.random.seed(123)
