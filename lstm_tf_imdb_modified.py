@@ -45,15 +45,13 @@ np.random.seed(123)
 
 
 class Options(object):
-    DATA_MAXLEN = 200
+    DATA_MAXLEN = 100
     CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
-    saveto = 'lstm_model.npz'  # The best model will be saved there
-    saveFreq = 1110  # Save the parameters after every saveFreq updates
     valid_batch_size = 64  # The batch size used for validation/test set.
     use_dropout = True,  # if False slightly faster, but worst test error
     # This frequently need a bigger model.
@@ -317,7 +315,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.c: c_outputs})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
-            
+
         accuracy= total_num_correct_predictions/num_samples_seen
         print("total cost is %.4f" %total_cost)
         return np.asscalar(accuracy)
