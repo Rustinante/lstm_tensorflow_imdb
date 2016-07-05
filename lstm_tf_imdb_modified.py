@@ -13,19 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""
-The hyperparameters used in the model:
-- init_scale - the initial scale of the weights
-- learning_rate - the initial value of the learning rate
-- max_grad_norm - the maximum permissible norm of the gradient
-- num_layers - the number of LSTM layers
-- num_steps - the number of unrolled steps of LSTM
-- hidden_size - the number of LSTM units
-- keep_prob - the probability of keeping weights in the dropout layer
-- lr_decay - the decay of the learning rate for each epoch after "max_epoch"
-- batch_size - the batch size
 
-"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -36,16 +24,13 @@ import tensorflow as tf
 from imdb2 import *
 
 
-
 dim_proj= 128
 BATCH_SIZE=16
 ACCURACY_THREASHOLD= 0.85
 np.random.seed(123)
 
-
-
 class Options(object):
-    DATA_MAXLEN = 100
+    DATA_MAXLEN = 200
     CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
@@ -221,8 +206,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
     cell_maxlen = config.CELL_MAXLEN
     h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
     c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
-    h_outputs = h_0
-    c_outputs = c_0
     if is_training:
         if flags.first_training_epoch:
             flags.first_training_epoch= False
@@ -256,8 +239,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                          feed_dict={m._inputs: x_mini_segments[i],
                                                                     m._targets: labels_mini_segments[i],
                                                                     m._mask: mask_segments[i],
-                                                                    m.h: h_outputs,
-                                                                    m.c: c_outputs,
+                                                                    m.h: h_0,
+                                                                    m.c: c_0,
                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence})
                 else:
                     h_outputs, c_outputs, _ = session.run([m.h_outputs, m.c, m.train_op],
@@ -273,8 +256,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                     m._targets: labels_mini_segments[num_times_to_feed-1],
                                                                     m._mask: mask_segments[num_times_to_feed-1],
                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h: h_outputs,
-                                                                    m.c: c_outputs})
+                                                                    m.h: h_0,
+                                                                    m.c: c_0})
             else:
                 num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                          feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
@@ -324,8 +307,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                         feed_dict={m._inputs: x_mini_segments[i],
                                                                  m._targets: labels_mini_segments[i],
                                                                  m._mask: mask_segments[i],
-                                                                 m.h: h_outputs,
-                                                                 m.c: c_outputs,
+                                                                 m.h: h_0,
+                                                                 m.c: c_0,
                                                                  m.num_words_in_each_sentence: num_words_in_each_sentence})
                 else:
                     h_outputs, c_outputs = session.run([m.h_outputs, m.c],
@@ -341,8 +324,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                     m._targets: labels_mini_segments[num_times_to_feed - 1],
                                                                     m._mask: mask_segments[num_times_to_feed - 1],
                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h: h_outputs,
-                                                                    m.c: c_outputs})
+                                                                    m.h: h_0,
+                                                                    m.c: c_0})
             else:
                 cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
                                                             feed_dict={
