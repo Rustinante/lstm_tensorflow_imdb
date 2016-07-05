@@ -45,7 +45,7 @@ np.random.seed(123)
 
 
 class Options(object):
-    DATA_MAXLEN = 100
+    DATA_MAXLEN = 200
     CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
@@ -259,7 +259,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h: h_outputs,
                                                                 m.c: c_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
-                
+
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini_segments[num_times_to_feed-1],
@@ -284,12 +284,40 @@ def run_epoch(session, m, data, is_training, verbose=True):
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen=cell_maxlen)
             num_samples_seen += x_mini.shape[1]
-            cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
-                                                        feed_dict={m._inputs: x_mini,
-                                                                   m._targets: labels_mini,
-                                                                   m._mask: mask})
+            maxlen = x_mini.shape[0]
+            if maxlen % cell_maxlen != 0:
+                raise ValueError(
+                    "maxlen %d is not an integer multiple of config.CELL_MAXLEN %d " % (maxlen, cell_maxlen))
+            num_times_to_feed = maxlen // cell_maxlen
+            num_words_in_each_sentence = mask.sum(axis=0, dtype=np.float32).reshape([1, -1])
+            x_mini_segments = []
+            mask_segments = []
+            labels_mini_segments = []
+
+            for i in range(num_times_to_feed):
+                x_mini_segments.append(x_mini[cell_maxlen * i: cell_maxlen * (i + 1)])
+                mask_segments.append(mask[cell_maxlen * i: cell_maxlen * (i + 1)])
+                labels_mini_segments.append(labels_mini[cell_maxlen * i: cell_maxlen * (i + 1)])
+
+            for i in range(num_times_to_feed - 1):
+                h_outputs, c_outputs = session.run([m.h_outputs, m.c],
+                                                    feed_dict={m._inputs: x_mini_segments[i],
+                                                             m._targets: labels_mini_segments[i],
+                                                             m._mask: mask_segments[i],
+                                                             m.h: h_outputs,
+                                                             m.c: c_outputs,
+                                                             m.num_words_in_each_sentence: num_words_in_each_sentence})
+
+            cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
+                                                     feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
+                                                                m._targets: labels_mini_segments[num_times_to_feed - 1],
+                                                                m._mask: mask_segments[num_times_to_feed - 1],
+                                                                m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                                m.h: h_outputs,
+                                                                m.c: c_outputs})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
+            
         accuracy= total_num_correct_predictions/num_samples_seen
         print("total cost is %.4f" %total_cost)
         return np.asscalar(accuracy)
@@ -367,14 +395,14 @@ def main():
                         print("Validation accuracy reached the threashold. Breaking")
                         break
                     if epoch_number%10 == 0:
-                        path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
+                        path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number)
                         print("Saved parameters to %s" %path)
         except KeyboardInterrupt:
             pass
         print("\nTesting")
 
         flags.testing_epoch=True
-        config.CELL_MAXLEN = config.DATA_MAXLEN = config.max_sentence_length_for_testing
+        config.DATA_MAXLEN = config.max_sentence_length_for_testing
         with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
