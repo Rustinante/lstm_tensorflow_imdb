@@ -84,7 +84,7 @@ class LSTM_Model(object):
             self._inputs = tf.placeholder(tf.int64,[config.CELL_MAXLEN, BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-        self.h = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj],name='h')
+        self.h = tf.placeholder(dtype=tf.float32, shape=[BATCH_SIZE, dim_proj],name='h')
         self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
         self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
 
@@ -143,7 +143,7 @@ class LSTM_Model(object):
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
-        self.h_outputs = tf.squeeze(tf.reduce_sum(tf.concat(2, self.h_outputs), 2))  # (n_samples x dim_proj)
+        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
 
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
@@ -259,7 +259,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini_segments[num_times_to_feed-1],
                                                                 m._mask: mask_segments[num_times_to_feed-1],
-                                                                m.h: h_outputs,
+                                                                m.h: h_0,
                                                                 m.c: c_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
 
