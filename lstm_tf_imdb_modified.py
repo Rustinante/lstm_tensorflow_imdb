@@ -30,7 +30,7 @@ ACCURACY_THREASHOLD= 0.85
 np.random.seed(123)
 
 class Options(object):
-    DATA_MAXLEN = 200
+    DATA_MAXLEN = 100
     CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
@@ -261,8 +261,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             else:
                 num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                          feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
-                                                                    m._targets: labels_mini_segments[
-                                                                        num_times_to_feed - 1],
+                                                                    m._targets: labels_mini_segments[num_times_to_feed - 1],
                                                                     m._mask: mask_segments[num_times_to_feed - 1],
                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence,
                                                                     m.h_0: h_outputs,
