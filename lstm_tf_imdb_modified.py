@@ -49,7 +49,7 @@ class Options(object):
     CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 20
+    max_epoch = 50
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -78,8 +78,7 @@ flags = Flag()
 
 class LSTM_Model(object):
     def __init__(self, is_training=True):
-        #number of LSTM units, in this case it is dim_proj=128
-        self.size = config.hidden_size
+        self._carry_on_recurrence = tf.placeholder(tf.bool,[1])
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         with tf.device("/cpu:0"):
@@ -131,8 +130,9 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = BATCH_SIZE
-        self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
-        self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
+        if self._carry_on_recurrence == False:
+            self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
+            self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
 
         for t in range(config.CELL_MAXLEN):
@@ -345,7 +345,7 @@ def main():
         print("\nTesting")
 
         flags.testing_epoch=True
-        config.DATA_MAXLEN = config.max_sentence_length_for_testing
+        config.CELL_MAXLEN = config.DATA_MAXLEN = config.max_sentence_length_for_testing
         with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
