@@ -33,7 +33,7 @@ from __future__ import print_function
 import time
 import numpy as np
 import tensorflow as tf
-from imdb import *
+from imdb2 import *
 
 
 
@@ -134,12 +134,10 @@ class LSTM_Model(object):
         self.h_outputs = []
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
-        h, c = self.step(mask_slice,
-                                   tf.matmul(inputs_slice, lstm_W) + lstm_b,
-                                   self.h,
-                                   self.c)
+        h, c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h, self.c)
         self.h_outputs.append(tf.expand_dims(self.h, -1))
-        for t in range(config.CELL_MAXLEN-1):
+
+        for t in range(1,config.CELL_MAXLEN):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
