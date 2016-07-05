@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import division
 from six.moves import xrange
 import six.moves.cPickle as pickle
 
@@ -8,7 +9,7 @@ import os
 import numpy as np
 
 
-def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
+def prepare_data(seqs, labels, cell_maxlen, maxlen=None):
     """Create the matrices from the datasets.
 
     This pad each sequence to the same length: the length of the
@@ -20,10 +21,7 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
     This swaps the axis!
     """
     # x: a list of sentences
-    if (maxlen is not None) and maxlen>MAXLEN_to_pad_to:
-        raise ValueError("maxlen should be less than MAXLEN_to_pad_to. maxlen = %d MAXLEN_to_pad_to = %d "%(maxlen,MAXLEN_to_pad_to))
     lengths = [len(s) for s in seqs]
-
     if maxlen is not None:
         new_seqs = []
         new_labels = []
@@ -40,10 +38,19 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
         if len(lengths) < 1:
             return None, None, None
 
+    maxlen = max(lengths)
+    quotient = maxlen // cell_maxlen
+    remainder = maxlen % cell_maxlen
+
+    if remainder != 0:
+        quotient+=1
+
+    length_to_pad_to = cell_maxlen * quotient
+
     n_samples = len(seqs)
     # columns are the samples in R^maxlen
-    x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int64)
-    x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
+    x = np.zeros((length_to_pad_to, n_samples)).astype(np.int64)
+    x_mask = np.zeros((length_to_pad_to, n_samples)).astype(np.float32)
     for idx, s in enumerate(seqs):
         x[:lengths[idx], idx] = s
         x_mask[:lengths[idx], idx] = 1.

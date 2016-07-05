@@ -78,7 +78,6 @@ flags = Flag()
 
 class LSTM_Model(object):
     def __init__(self, is_training=True):
-        self._carry_on_recurrence = tf.placeholder(tf.bool,[1])
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         with tf.device("/cpu:0"):
@@ -87,6 +86,8 @@ class LSTM_Model(object):
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
         self.h = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj])
         self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj])
+        self.num_words_in_each_sentence = tf.placeholder(dtype=tf.int32, [1, BATCH_SIZE])
+
         def ortho_weight(ndim):
             #np.random.seed(123)
             W = np.random.randn(ndim, ndim)
@@ -131,41 +132,33 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = BATCH_SIZE
-        if not self._carry_on_recurrence:
+        self.h_outputs = []
 
-            self.h_outputs = []
+        for t in range(config.CELL_MAXLEN):
+            mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
+            inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
-            for t in range(config.CELL_MAXLEN):
-                mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
-                inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
+            self.h, self.c = self.step(mask_slice,
+                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
+                                       self.h,
+                                       self.c)
+            self.h_outputs.append(tf.expand_dims(self.h, -1))
+
+        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
 
-
-
-                self.h, self.c = self.step(mask_slice,
-                                           tf.matmul(inputs_slice, lstm_W) + lstm_b,
-                                           self.h,
-                                           self.c)
-                self.h_outputs.append(tf.expand_dims(self.h, -1))
-
-            self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
-
-            num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-            tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-
-            pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
-            # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
-
-            offset = 1e-8
-            softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
-            self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-            self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
-            print("Constructing graphs for cross entropy")
-            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
-            if is_training:
-                print("Trainable variables: ", tf.trainable_variables())
-                self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
-            print("Finished constructing the graph")
+        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+        pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
+        # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
+        softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+        self.predictions = tf.argmax(softmax_probabilities, dimension=1)
+        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+        print("Constructing graphs for cross entropy")
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
+        if is_training:
+            print("Trainable variables: ", tf.trainable_variables())
+            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+        print("Finished constructing the graph")
 
 
     def _slice(self, x, n, dim):
@@ -224,6 +217,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
         x.append([data[0][i] for i in l])
         labels.append([data[1][i] for i in l])
 
+    cell_maxlen = config.CELL_MAXLEN
     if is_training:
         if flags.first_training_epoch:
             flags.first_training_epoch= False
@@ -232,18 +226,43 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             # x_mini and mask both have the shape of ( config.DATA_MAXLEN x BATCH_SIZE )
-            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.DATA_MAXLEN)
+            x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen= cell_maxlen)
             num_samples_seen += x_mini.shape[1]
-            h = np.zeros([n_samples, dim_proj], dtype=np.float32)
-            c = np.zeros([n_samples, dim_proj], dtype=np.float32)
+            maxlen = x_mini.shape[0]
+
+            if maxlen % cell_maxlen != 0:
+                raise ValueError("maxlen %d is not an integer multiple of config.CELL_MAXLEN %d "%(maxlen, cell_maxlen))
+            num_times_to_feed = maxlen // cell_maxlen
+
+            num_words_in_each_sentence = mask.sum(axis=0, dtype=np.int32).reshape([1,-1])
+            x_mini_segments=[]
+            mask_segments=[]
+            labels_mini_segments=[]
+            for i in range(num_times_to_feed):
+                x_mini_segments.append(x_mini[cell_maxlen * i : cell_maxlen*(i+1)])
+                mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
+                labels_mini_segments.append(labels_mini[cell_maxlen * i : cell_maxlen*(i+1)])
+
+            h_0 = np.zeros([n_samples, dim_proj], dtype=np.float32)
+            c_0 = np.zeros([n_samples, dim_proj], dtype=np.float32)
+            h_outputs = h_0
+            c_outputs = c_0
+            for i in range(num_times_to_feed-1):
+                h_outputs, c_outputs _ = session.run([m.h_outputs, m.c, m.train_op],
+                                                     feed_dict={m._inputs: x_mini_segments[i],
+                                                                m._targets: labels_mini_segments[i],
+                                                                m._mask: mask_segments[i],
+                                                                m.h: h_outputs,
+                                                                m.c: c_outputs})
+
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
-                                                     feed_dict={m._inputs: x_mini,
-                                                                m._targets: labels_mini,
-                                                                m._mask: mask,
-                                                                m.h: h,
-                                                                m.c: c,
-                                                                m._carry_on_recurrence: False})
-            #print(m.lstm_W.eval())
+                                                     feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
+                                                                m._targets: labels_mini_segments[num_times_to_feed-1],
+                                                                m._mask: mask_segments[num_times_to_feed-1],
+                                                                m.h: h_outputs,
+                                                                m.c: c_outputs,
+                                                                m.num_words_in_each_sentence: num_words_in_each_sentence})
+
             total_num_correct_predictions+= num_correct_predictions
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
@@ -258,7 +277,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For validation, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
-            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.DATA_MAXLEN)
+            x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen=cell_maxlen)
             num_samples_seen += x_mini.shape[1]
             cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
                                                         feed_dict={m._inputs: x_mini,
