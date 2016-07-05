@@ -195,14 +195,15 @@ def run_epoch(session, m, data, is_training, verbose=True):
     list_of_training_index_list = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
     total_num_batches = len(data[0]) // BATCH_SIZE
     total_num_reviews = len(data[0])
-    #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
+    '''
     x=[]
     labels=[]
     for l in list_of_training_index_list:
         x.append([data[0][i] for i in l])
         labels.append([data[1][i] for i in l])
-
+    '''
     cell_maxlen = config.CELL_MAXLEN
     h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
     c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
