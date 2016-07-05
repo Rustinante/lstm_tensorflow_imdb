@@ -131,7 +131,6 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        n_samples = BATCH_SIZE
         self.h_outputs = []
 
         for t in range(config.CELL_MAXLEN):
@@ -243,8 +242,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
                 labels_mini_segments.append(labels_mini[cell_maxlen * i : cell_maxlen*(i+1)])
 
-            h_0 = np.zeros([n_samples, dim_proj], dtype=np.float32)
-            c_0 = np.zeros([n_samples, dim_proj], dtype=np.float32)
+            h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype=np.float32)
+            c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype=np.float32)
             h_outputs = h_0
             c_outputs = c_0
             for i in range(num_times_to_feed-1):
