@@ -30,7 +30,7 @@ ACCURACY_THREASHOLD= 0.85
 np.random.seed(123)
 
 class Options(object):
-    DATA_MAXLEN = 100
+    DATA_MAXLEN = 200
     CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
@@ -317,12 +317,12 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                   m.num_words_in_each_sentence: num_words_in_each_sentence})
             if first_segment_flag:
                 cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
-                                                         feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
-                                                                    m._targets: labels_mini,
-                                                                    m._mask: mask_segments[num_times_to_feed - 1],
-                                                                    m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h_0: h_0,
-                                                                    m.c_0: c_0})
+                                                            feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
+                                                                       m._targets: labels_mini,
+                                                                       m._mask: mask_segments[num_times_to_feed - 1],
+                                                                       m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                                       m.h_0: h_0,
+                                                                       m.c_0: c_0})
             else:
                 cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
                                                             feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
