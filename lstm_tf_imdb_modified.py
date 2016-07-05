@@ -324,15 +324,13 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                     m.h_0: h_0,
                                                                     m.c_0: c_0})
             else:
-                print(labels_mini_segments[3].shape)
                 cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
-                                                            feed_dict={
-                                                                m._inputs: x_mini_segments[num_times_to_feed - 1],
-                                                                m._targets: labels_mini,
-                                                                m._mask: mask_segments[num_times_to_feed - 1],
-                                                                m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                m.h_0: h_outputs,
-                                                                m.c_0: c_outputs})
+                                                            feed_dict={m._inputs: x_mini_segments[num_times_to_feed - 1],
+                                                                       m._targets: labels_mini,
+                                                                       m._mask: mask_segments[num_times_to_feed - 1],
+                                                                       m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                                       m.h_0: h_outputs,
+                                                                       m.c_0: c_outputs})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
 
