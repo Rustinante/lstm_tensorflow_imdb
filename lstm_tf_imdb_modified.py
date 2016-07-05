@@ -247,8 +247,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                           feed_dict={m._inputs: x_mini_segments[i],
                                                                      m._targets: labels_mini_segments[i],
                                                                      m._mask: mask_segments[i],
-                                                                     m.h_0: h_outputs.eval(),
-                                                                     m.c_0: c_outputs.eval(),
+                                                                     m.h_0: h_outputs,
+                                                                     m.c_0: c_outputs,
                                                                      m.num_words_in_each_sentence: num_words_in_each_sentence})
             if first_segment_flag:
                 num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
@@ -265,8 +265,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                         num_times_to_feed - 1],
                                                                     m._mask: mask_segments[num_times_to_feed - 1],
                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h_0: h_outputs.eval(),
-                                                                    m.c_0: c_outputs.eval()})
+                                                                    m.h_0: h_outputs,
+                                                                    m.c_0: c_outputs})
 
             total_num_correct_predictions+= num_correct_predictions
 
@@ -315,8 +315,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                        feed_dict={m._inputs: x_mini_segments[i],
                                                                   m._targets: labels_mini_segments[i],
                                                                   m._mask: mask_segments[i],
-                                                                  m.h: h_outputs.eval(),
-                                                                  m.c: c_outputs.eval(),
+                                                                  m.h: h_outputs,
+                                                                  m.c: c_outputs,
                                                                   m.num_words_in_each_sentence: num_words_in_each_sentence})
             if first_segment_flag:
                 cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
@@ -333,8 +333,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._targets: labels_mini_segments[num_times_to_feed - 1],
                                                                 m._mask: mask_segments[num_times_to_feed - 1],
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                m.h: h_outputs.eval(),
-                                                                m.c: c_outputs.eval()})
+                                                                m.h: h_outputs,
+                                                                m.c: c_outputs})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
 
