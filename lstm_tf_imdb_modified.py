@@ -259,8 +259,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h: h_outputs,
                                                                 m.c: c_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
-            print(h_outputs.shape)
-            print(h_outputs.dtype)
+                
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini_segments[num_times_to_feed-1],
