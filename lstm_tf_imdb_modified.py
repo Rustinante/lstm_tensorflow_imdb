@@ -259,11 +259,11 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print(h_outputs.dtype)
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
-                                                                m.h: np.zeros([BATCH_SIZE, dim_proj], dtype='float32'),
-                                                                m.c: c_outputs,
                                                                 m._targets: labels_mini_segments[num_times_to_feed-1],
                                                                 m._mask: mask_segments[num_times_to_feed-1],
-                                                                m.num_words_in_each_sentence: num_words_in_each_sentence})
+                                                                m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                                m.h: h_outputs,
+                                                                m.c: c_outputs})
 
             total_num_correct_predictions+= num_correct_predictions
 
