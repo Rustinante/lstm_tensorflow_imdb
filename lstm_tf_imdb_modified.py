@@ -45,7 +45,8 @@ np.random.seed(123)
 
 
 class Options(object):
-    MAXLEN = 100
+    DATA_MAXLEN = 100
+    CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 20
@@ -82,7 +83,7 @@ class LSTM_Model(object):
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         with tf.device("/cpu:0"):
-            self._inputs = tf.placeholder(tf.int64,[config.MAXLEN, BATCH_SIZE],name='embedded_inputs')
+            self._inputs = tf.placeholder(tf.int64,[config.CELL_MAXLEN, BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
@@ -102,7 +103,7 @@ class LSTM_Model(object):
 
             unrolled_inputs=tf.reshape(self._inputs, [1,-1])
             embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
-            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
+            embedded_inputs = tf.reshape(embedded_inputs, [config.CELL_MAXLEN, BATCH_SIZE, dim_proj])
 
             # softmax weights and bias
             #np.random.seed(123)
@@ -134,9 +135,13 @@ class LSTM_Model(object):
         self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
 
-        for t in range(config.MAXLEN):
+        for t in range(config.CELL_MAXLEN):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
+
+
+
+
             self.h, self.c = self.step(mask_slice,
                                        tf.matmul(inputs_slice, lstm_W) + lstm_b,
                                        self.h,
@@ -226,8 +231,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For training, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-            # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
-            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
+            # x_mini and mask both have the shape of ( config.DATA_MAXLEN x BATCH_SIZE )
+            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.DATA_MAXLEN)
             num_samples_seen += x_mini.shape[1]
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini,
@@ -248,7 +253,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For validation, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
-            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
+            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.DATA_MAXLEN)
             num_samples_seen += x_mini.shape[1]
             cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
                                                         feed_dict={m._inputs: x_mini,
@@ -294,7 +299,7 @@ def get_random_minibatches_index(num_training_data, batch_size=BATCH_SIZE, shuff
 def main():
     train_data, validation_data, test_data = load_data(n_words=config.VOCABULARY_SIZE,
                                                        validation_portion=config.VALIDATION_PORTION,
-                                                       maxlen=config.MAXLEN)
+                                                       maxlen=config.DATA_MAXLEN)
     new_test_features=[]
     new_test_labels=[]
     #right now we only consider sentences of length less than config.max_sentence_length_for_testing
@@ -340,7 +345,7 @@ def main():
         print("\nTesting")
 
         flags.testing_epoch=True
-        config.MAXLEN = config.max_sentence_length_for_testing
+        config.DATA_MAXLEN = config.max_sentence_length_for_testing
         with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
         testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
