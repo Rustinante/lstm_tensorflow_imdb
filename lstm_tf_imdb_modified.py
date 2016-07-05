@@ -84,7 +84,7 @@ class LSTM_Model(object):
             self._inputs = tf.placeholder(tf.int64,[config.CELL_MAXLEN, BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-        self.h = tf.placeholder(dtype=tf.float32, shape=[BATCH_SIZE, dim_proj],name='h')
+        self.h = tf.placeholder(dtype=tf.float32, shape=[None, None],name='h')
         self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
         self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
 
