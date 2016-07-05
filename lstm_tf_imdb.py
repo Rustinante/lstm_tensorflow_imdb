@@ -130,8 +130,7 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = BATCH_SIZE
-        #self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
-        self.h=tf.placeholder(tf.float32, [n_samples,dim_proj])
+        self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
 
@@ -254,8 +253,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
                                                         feed_dict={m._inputs: x_mini,
                                                                    m._targets: labels_mini,
-                                                                   m._mask: mask,
-                                                                   m.h: np.zeros([n_samples, dim_proj],dtype=np.float32)})
+                                                                   m._mask: mask})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
         accuracy= total_num_correct_predictions/num_samples_seen
