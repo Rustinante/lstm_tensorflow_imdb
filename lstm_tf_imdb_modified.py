@@ -306,8 +306,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                         feed_dict={m._inputs: x_mini_segments[i],
                                                                  m._targets: labels_mini_segments[i],
                                                                  m._mask: mask_segments[i],
-                                                                 m.h: h_0,
-                                                                 m.c: c_0,
+                                                                 m.h_0: h_0,
+                                                                 m.c_0: c_0,
                                                                  m.num_words_in_each_sentence: num_words_in_each_sentence})
                 else:
                     h_outputs, c_outputs = session.run([m.h_outputs, m.c],
@@ -323,8 +323,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                     m._targets: labels_mini_segments[num_times_to_feed - 1],
                                                                     m._mask: mask_segments[num_times_to_feed - 1],
                                                                     m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                    m.h: h_0,
-                                                                    m.c: c_0})
+                                                                    m.h_0: h_0,
+                                                                    m.c_0: c_0})
             else:
                 cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
                                                             feed_dict={
