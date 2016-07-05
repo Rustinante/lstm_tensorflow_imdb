@@ -234,7 +234,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 raise ValueError("maxlen %d is not an integer multiple of config.CELL_MAXLEN %d "%(maxlen, cell_maxlen))
             num_times_to_feed = maxlen // cell_maxlen
 
-            num_words_in_each_sentence = mask.sum(axis=0, dtype=np.int32).reshape([1,-1])
+            num_words_in_each_sentence = mask.sum(axis=0, dtype=np.float32).reshape([1,-1])
             x_mini_segments=[]
             mask_segments=[]
             labels_mini_segments=[]
