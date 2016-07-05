@@ -242,8 +242,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
                 labels_mini_segments.append(labels_mini[cell_maxlen * i : cell_maxlen*(i+1)])
 
-            h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype=np.float32)
-            c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype=np.float32)
+            h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
+            c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
             h_outputs = h_0
             c_outputs = c_0
             for i in range(num_times_to_feed-1):
@@ -254,12 +254,12 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h: h_outputs,
                                                                 m.c: c_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
-            print(h_outputs[0][0].dtype)
+
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini_segments[num_times_to_feed-1],
                                                                 m._mask: mask_segments[num_times_to_feed-1],
-                                                                m.h: h_0,
+                                                                m.h: h_outputs,
                                                                 m.c: c_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
 
