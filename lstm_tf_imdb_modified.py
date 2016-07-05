@@ -67,8 +67,8 @@ class LSTM_Model(object):
             self._inputs = tf.placeholder(tf.int64,[config.CELL_MAXLEN, BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
-        self.h = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
-        self.c = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
+        self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
+        self.c_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
         self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
 
         def ortho_weight(ndim):
@@ -117,18 +117,18 @@ class LSTM_Model(object):
         self.h_outputs = []
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
-        h, c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h, self.c)
-        self.h_outputs.append(tf.expand_dims(self.h, -1))
+        self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
+        self.h_outputs.append(tf.expand_dims(h, -1))
 
         for t in range(1,config.CELL_MAXLEN):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
-            h, c = self.step(mask_slice,
+            self.h, self.c = self.step(mask_slice,
                                        tf.matmul(inputs_slice, lstm_W) + lstm_b,
-                                       h,
-                                       c)
-            self.h_outputs.append(tf.expand_dims(h, -1))
+                                       self.h,
+                                       self.c)
+            self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
