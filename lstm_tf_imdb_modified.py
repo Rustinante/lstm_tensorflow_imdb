@@ -31,7 +31,7 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 200
-    CELL_MAXLEN = 10
+    CELL_MAXLEN = 1
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
