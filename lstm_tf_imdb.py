@@ -33,7 +33,7 @@ from __future__ import print_function
 import time
 import numpy as np
 import tensorflow as tf
-from imdb import *
+from imdb3 import *
 
 
 
@@ -64,7 +64,7 @@ class Options(object):
     hidden_size = 128
     keep_prob = 1
     learning_rate_decay = 1
-    max_sentence_length_for_testing=500
+    max_sentence_length_for_testing=100
 
 
 class Flag(object):
