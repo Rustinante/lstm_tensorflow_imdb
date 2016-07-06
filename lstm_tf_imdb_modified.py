@@ -131,20 +131,25 @@ class LSTM_Model(object):
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
-        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
-        self.basin = tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin")
+        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2, keep_dims=True)  # (n_samples x dim_proj)
+        self.basin = tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"), reduction_indices=2)
+
         # To be used to drain the basin after the last segment of each batch of data
-        zero_basin = np.zeros([BATCH_SIZE,dim_proj],dtype=np.float32)
+        zero_basin = np.zeros([BATCH_SIZE,dim_proj, 1],dtype=np.float32)
         self.drain_basin = self.basin.assign(zero_basin)
+
         # Stitch together all the previous h's
-        self.h_outputs = tf.reduce_sum(self.basin, 2)
+        self.h_outputs = tf.reduce_sum(self.basin, 2, keep_dims=False)
+
         # Tiling to operate on each of the dimensions of the representation of each data point in the 128-dimensional space
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
         pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
+
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+
         print("Constructing graphs for cross entropy")
         offset=1e-8
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities+offset), reduction_indices=1))
@@ -371,7 +376,7 @@ def main():
                 epoch_number= i+1
                 print("\nTraining")
                 m.assign_lr(session, config.learning_rate)
-                print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
+                print("Epoch: %d Learning rate: %.5f" % (epoch_number, config.learning_rate))
                 average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
 
