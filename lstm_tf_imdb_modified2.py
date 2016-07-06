@@ -221,7 +221,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[i : i+1])
 
             for i in range(num_times_to_feed-1):
-                h_outputs, h, c_outputs, _ = session.run([m.h_outputs, m.h, m.c],
+                h_outputs, h, c_outputs = session.run([m.h_outputs, m.h, m.c],
                                                      feed_dict={m._inputs: x_mini_segments[i],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[i],
