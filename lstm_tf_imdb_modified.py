@@ -112,7 +112,7 @@ class LSTM_Model(object):
                                      initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[BATCH_SIZE,dim_proj * 4], dtype=tf.float32,
                                      initializer=tf.constant_initializer(lstm_b))
-            basin = tf.get_variable("basin", shape=[BATCH_SIZE,dim_proj,1],
+            basin = tf.get_variable("basin", shape=[BATCH_SIZE,dim_proj],
                                          dtype=tf.float32,initializer=tf.constant_initializer(0.0, dtype=tf.float32))
         self.h_outputs = []
 
