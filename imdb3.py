@@ -141,10 +141,10 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     test_set_y = [train_set[1][num_training_data:]]
     test_set = (test_set_x,test_set_y)
 
-    train_set_x = [train_set_x[0][:num_training_data]]
-    train_set_y = [train_set_y[1][:num_training_data]]
+    train_set_x = [train_set[0][:num_training_data]]
+    train_set_y = [train_set[1][:num_training_data]]
     train_set = (train_set_x,train_set_y)
-
+    
     # train_set is a tuple containin two lists
     # train_set[0] is a list containing 25000 lists
     # train_set[1] is a list of integers from {0,1} representing the corresponding sentiments
