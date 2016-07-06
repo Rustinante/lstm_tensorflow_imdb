@@ -27,7 +27,7 @@ from imdb2 import *
 dim_proj= 128
 BATCH_SIZE=16
 ACCURACY_THREASHOLD= 0.90
-np.random.seed(123)
+np.random.seed(5)
 
 class Options(object):
     DATA_MAXLEN = 100
@@ -144,7 +144,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-            self._train_op = tf.train.AdagradOptimizer(0.0001).minimize(self.cross_entropy)
+            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
