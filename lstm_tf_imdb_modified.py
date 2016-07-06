@@ -118,6 +118,7 @@ class LSTM_Model(object):
         self.h_outputs = [tf.expand_dims(self.h_outputs_previous, -1)]
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
+
         self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
         self.h_outputs.append(tf.expand_dims(self.h, -1))
 
@@ -207,7 +208,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     cell_maxlen = config.CELL_MAXLEN
     h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
     c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
-    h_outputs = h = h_0
+    h_outputs = h_0
+    h = h_0
     c_outputs = c_0
     if is_training:
         if flags.first_training_epoch:
@@ -218,7 +220,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             print("mini batch number: %d" %mini_batch_number)
             # x_mini and mask both have the shape of ( config.DATA_MAXLEN x BATCH_SIZE )
-            x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen= cell_maxlen)
+            x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen=cell_maxlen)
             num_samples_seen += x_mini.shape[1]
             maxlen = x_mini.shape[0]
 
