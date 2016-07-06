@@ -47,7 +47,6 @@ class Options(object):
     max_grad_norm = 5
     hidden_size = 128
     keep_prob = 1
-    learning_rate_decay = 1
     max_sentence_length_for_testing=500
 
 
@@ -146,7 +145,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities+offset), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-        self._train_op = tf.train.AdamOptimizer(0.0001,beta1=0.999,beta2=0.999999).minimize(self.cross_entropy)
+        self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
