@@ -66,7 +66,7 @@ class LSTM_Model(object):
         with tf.device("/cpu:0"):
             self._inputs = tf.placeholder(tf.int64,[BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
-        self._mask = tf.placeholder(tf.float32, [BATCH_SIZE],name='mask')
+        self._mask = tf.placeholder(tf.float32, [1,BATCH_SIZE],name='mask')
         self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
         self.c_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
         self.h_outputs_previous = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h_outputs_previous')
