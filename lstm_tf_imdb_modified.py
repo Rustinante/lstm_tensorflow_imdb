@@ -34,7 +34,7 @@ class Options(object):
     CELL_MAXLEN = 10
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 50
+    max_epoch = 200
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     use_dropout = True,  # if False slightly faster, but worst test error
@@ -72,7 +72,7 @@ class LSTM_Model(object):
 
         def ortho_weight(ndim):
             #np.random.seed(123)
-            W = np.random.randn(ndim, ndim)
+            W = 0.1*np.random.randn(ndim, ndim)
             u, s, v = np.linalg.svd(W)
             return u.astype(np.float32)
 
