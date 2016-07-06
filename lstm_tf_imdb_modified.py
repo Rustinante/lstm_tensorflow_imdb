@@ -132,7 +132,8 @@ class LSTM_Model(object):
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2, keep_dims=True)  # (n_samples x dim_proj)
-        self.basin = self.basin.assign(tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"),keep_dims=True, reduction_indices=2))
+        self.basin = self.basin.assign(tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"),
+                                                     keep_dims=True, reduction_indices=2))
 
         # To be used to drain the basin after the last segment of each batch of data
         zero_basin = np.zeros([BATCH_SIZE,dim_proj, 1],dtype=np.float32)
