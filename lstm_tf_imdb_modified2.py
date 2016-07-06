@@ -114,7 +114,7 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         self.h_outputs = [tf.expand_dims(self.h_outputs_previous,-1)]
-        self.h, self.c = self.step(self._mask, tf.matmul(embedded_inputs, lstm_W) + lstm_b, self.h_0, self.c_0)
+        self.h, self.c = self.step(self._mask, tf.matmul(tf.squeeze(embedded_inputs), lstm_W) + lstm_b, self.h_0, self.c_0)
         self.h_outputs.append(tf.expand_dims(self.h, -1))
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
