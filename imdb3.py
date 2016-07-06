@@ -135,8 +135,9 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
 
     train_set = pickle.load(f)
     num_training_data= int(len(train_set[0])*0.8)
+    print("num train data: %d" %num_training_data)
     num_testing_data= len(train_set)-num_training_data
-
+    print("num test data %d" %num_testing_data)
     test_set_x = [train_set[0][num_training_data:]]
     test_set_y = [train_set[1][num_training_data:]]
     test_set = (test_set_x,test_set_y)
@@ -166,8 +167,10 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
 
     # n_samples is the number of datapoints in train_set_x
     n_samples = len(train_set_x)
+    print("n_samples = len(train set x %d"%n_samples)
     sidx = np.random.permutation(n_samples)
     n_train = int(np.round(n_samples * (1. - validation_portion)))
+    print("n_train = %d" %n_train)
     valid_set_x = [train_set_x[s] for s in sidx[n_train:]]
     valid_set_y = [train_set_y[s] for s in sidx[n_train:]]
     train_set_x = [train_set_x[s] for s in sidx[:n_train]]
@@ -178,10 +181,6 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
 
     def remove_unk(x):
         return [[1 if w >= n_words else w for w in sen] for sen in x]
-
-    test_set_x, test_set_y = test_set
-    valid_set_x, valid_set_y = valid_set
-    train_set_x, train_set_y = train_set
 
     train_set_x = remove_unk(train_set_x)
     valid_set_x = remove_unk(valid_set_x)
