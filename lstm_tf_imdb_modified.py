@@ -31,7 +31,7 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 100
+    CELL_MAXLEN = 10
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
@@ -115,7 +115,8 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        self.h_outputs = [tf.expand_dims(self.h_outputs_previous, -1)]
+        self.h_outputs = []
+        self.h_outputs.append(tf.expand_dims(self.h_outputs_previous, -1))
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
 
@@ -218,7 +219,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For training, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-            print("mini batch number: %d" %mini_batch_number)
+            #print("mini batch number: %d" %mini_batch_number)
             # x_mini and mask both have the shape of ( config.DATA_MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen=cell_maxlen)
             num_samples_seen += x_mini.shape[1]
@@ -227,7 +228,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             if maxlen % cell_maxlen != 0:
                 raise ValueError("maxlen %d is not an integer multiple of config.CELL_MAXLEN %d "%(maxlen, cell_maxlen))
             num_times_to_feed = maxlen // cell_maxlen
-            print("number of times to feed: %d"%num_times_to_feed)
+            #print("number of times to feed: %d"%num_times_to_feed)
             num_words_in_each_sentence = mask.sum(axis=0, dtype=np.float32).reshape([1,-1])
             x_mini_segments=[]
             mask_segments=[]
@@ -235,7 +236,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             for i in range(num_times_to_feed):
                 x_mini_segments.append(x_mini[cell_maxlen * i : cell_maxlen*(i+1)])
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
-            print(h_outputs)
+            #print(h_outputs)
             for i in range(num_times_to_feed-1):
                 h_outputs, h, c_outputs = session.run([m.h_outputs, m.h, m.c],
                                                      feed_dict={m._inputs: x_mini_segments[i],
@@ -245,7 +246,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
-                print(h_outputs)
+                #print(h_outputs)
 
             h_outputs, num_correct_predictions, _ = session.run([m.h_outputs, m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
@@ -255,7 +256,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h_0: h,
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs})
-            print(h_outputs)
+            #print(h_outputs)
 
 
             total_num_correct_predictions+= num_correct_predictions
