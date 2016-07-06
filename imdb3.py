@@ -165,12 +165,13 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     # split training set into validation set
 
     # n_samples is the number of datapoints in train_set_x
-    sidx = np.random.permutation(num_training_data)
-    actual_n_train = int(np.round(num_training_data * (1. - validation_portion)))
-    valid_set_x = [train_set_x[s] for s in sidx[actual_n_train:]]
-    valid_set_y = [train_set_y[s] for s in sidx[actual_n_train:]]
-    train_set_x = [train_set_x[s] for s in sidx[:actual_n_train]]
-    train_set_y = [train_set_y[s] for s in sidx[:actual_n_train]]
+    n_samples = len(train_set_x)
+    sidx = np.random.permutation(n_samples)
+    n_train = int(np.round(n_samples * (1. - validation_portion)))
+    valid_set_x = [train_set_x[s] for s in sidx[n_train:]]
+    valid_set_y = [train_set_y[s] for s in sidx[n_train:]]
+    train_set_x = [train_set_x[s] for s in sidx[:n_train]]
+    train_set_y = [train_set_y[s] for s in sidx[:n_train]]
 
     train_set = (train_set_x, train_set_y)
     valid_set = (valid_set_x, valid_set_y)
