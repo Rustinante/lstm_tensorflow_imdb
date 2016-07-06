@@ -218,7 +218,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For training, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-            print("mini batch number: %d" %mini_batch_number)
+            #print("mini batch number: %d" %mini_batch_number)
             # x_mini and mask both have the shape of ( config.DATA_MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen=cell_maxlen)
             num_samples_seen += x_mini.shape[1]
@@ -227,7 +227,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             if maxlen % cell_maxlen != 0:
                 raise ValueError("maxlen %d is not an integer multiple of config.CELL_MAXLEN %d "%(maxlen, cell_maxlen))
             num_times_to_feed = maxlen // cell_maxlen
-            print("number of times to feed: %d"%num_times_to_feed)
+            #print("number of times to feed: %d"%num_times_to_feed)
             num_words_in_each_sentence = mask.sum(axis=0, dtype=np.float32).reshape([1,-1])
             x_mini_segments=[]
             mask_segments=[]
