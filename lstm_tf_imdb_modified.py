@@ -31,7 +31,7 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 50
+    CELL_MAXLEN =10
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
@@ -133,6 +133,7 @@ class LSTM_Model(object):
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
+        self.h_out = self.h
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
@@ -238,7 +239,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
             #print(h_outputs)
             for i in range(num_times_to_feed-1):
-                h_outputs, h, c_outputs = session.run([m.h_outputs, m.h, m.c],
+                h_outputs, h, c_outputs = session.run([m.h_outputs, m.h_out, m.c],
                                                      feed_dict={m._inputs: x_mini_segments[i],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[i],
