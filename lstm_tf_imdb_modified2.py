@@ -229,7 +229,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
-                h_outputs=h_outputs+h_temp
 
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
