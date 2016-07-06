@@ -114,7 +114,7 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        self.h_outputs = []
+        self.h_outputs = [tf.expand_dims(self.h_0, -1)]
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
         self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
