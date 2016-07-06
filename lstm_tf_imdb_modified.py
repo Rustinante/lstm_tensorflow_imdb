@@ -26,12 +26,12 @@ from imdb2 import *
 
 dim_proj= 128
 BATCH_SIZE=16
-ACCURACY_THREASHOLD= 0.85
+ACCURACY_THREASHOLD= 0.90
 np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 100
+    CELL_MAXLEN = 10
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
@@ -264,8 +264,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
         if flags.first_validation_epoch or flags.testing_epoch:
             flags.first_validation_epoch= False
             flags.testing_epoch= False
-            print("For validation, total number of reviews is: %d" % total_num_reviews)
-            print("For validation, total number of batches is: %d" % total_num_batches)
+            print("For validation/testing, total number of reviews is: %d" % total_num_reviews)
+            print("For validation/testing, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, cell_maxlen=cell_maxlen)
