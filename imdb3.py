@@ -136,7 +136,7 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     train_set = pickle.load(f)
     num_training_data= int(len(train_set[0])*0.8)
     print("num train data: %d" %num_training_data)
-    num_testing_data= len(train_set)-num_training_data
+    num_testing_data= len(train_set[0])-num_training_data
     print("num test data %d" %num_testing_data)
     test_set_x = [train_set[0][num_training_data:]]
     test_set_y = [train_set[1][num_training_data:]]
