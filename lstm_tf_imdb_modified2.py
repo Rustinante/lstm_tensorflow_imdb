@@ -66,7 +66,7 @@ class LSTM_Model(object):
         with tf.device("/cpu:0"):
             self._inputs = tf.placeholder(tf.int64,[BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
-        self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
+        self._mask = tf.placeholder(tf.float32, [BATCH_SIZE],name='mask')
         self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
         self.c_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
         self.h_outputs_previous = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h_outputs_previous')
@@ -114,9 +114,7 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         self.h_outputs = [tf.expand_dims(self.h_outputs_previous,-1)]
-        mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
-        inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
-        self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
+        self.h, self.c = self.step(self._mask, tf.matmul(embedded_inputs, lstm_W) + lstm_b, self.h_0, self.c_0)
         self.h_outputs.append(tf.expand_dims(self.h, -1))
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
