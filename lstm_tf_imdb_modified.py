@@ -31,7 +31,7 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 10
+    CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
@@ -235,7 +235,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             for i in range(num_times_to_feed):
                 x_mini_segments.append(x_mini[cell_maxlen * i : cell_maxlen*(i+1)])
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
-
+            print(h_outputs)
             for i in range(num_times_to_feed-1):
                 h_outputs, h, c_outputs = session.run([m.h_outputs, m.h, m.c],
                                                      feed_dict={m._inputs: x_mini_segments[i],
