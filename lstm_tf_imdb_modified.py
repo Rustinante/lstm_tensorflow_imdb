@@ -135,10 +135,6 @@ class LSTM_Model(object):
         self.push_to_basin = self.basin.assign(tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"),
                                                      keep_dims=True, reduction_indices=2))
 
-        # To be used to drain the basin after the last segment of each batch of data
-        zero_basin = np.zeros([BATCH_SIZE,dim_proj, 1],dtype=np.float32)
-        self.drain_basin = self.basin.assign(zero_basin)
-
         # Stitch together all the previous h's
         self.h_outputs = tf.reduce_sum(self.basin, 2, keep_dims=False)
 
@@ -157,6 +153,10 @@ class LSTM_Model(object):
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
         self._train_op = tf.train.AdamOptimizer(config.learning_rate,beta1=0.99).minimize(self.cross_entropy)
+
+        # To be used to drain the basin after the last segment of each batch of data
+        zero_basin = np.zeros([BATCH_SIZE,dim_proj, 1],dtype=np.float32)
+        self.drain_basin = self.basin.assign(zero_basin)
         print("Finished constructing the graph")
 
 
@@ -256,7 +256,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                          m.h_0: h_output,
                                                          m.c_0: c_output})
 
-            num_correct_predictions, _1, _2 = session.run([m.num_correct_predictions, m.train_op, m.drain_basin],
+            num_correct_predictions, _1, _2, _3 = session.run([m.num_correct_predictions, m.push_to_basin, m.train_op, m.drain_basin],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[num_times_to_feed-1],
