@@ -138,12 +138,12 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     print("num train data: %d" %num_training_data)
     num_testing_data= len(train_set[0])-num_training_data
     print("num test data %d" %num_testing_data)
-    test_set_x = [train_set[0][num_training_data:]]
-    test_set_y = [train_set[1][num_training_data:]]
+    test_set_x = [train_set[0][i] for i in range(num_training_data,len(train_set[0]))]
+    test_set_y = [train_set[1][i] for i in range(num_training_data,len(train_set[0]))]
     test_set = (test_set_x,test_set_y)
 
-    train_set_x = [train_set[0][:num_training_data]]
-    train_set_y = [train_set[1][:num_training_data]]
+    train_set_x = [train_set[0][i] for i in range(num_training_data)]
+    train_set_y = [train_set[1][i] for i in range(num_training_data)]
     train_set = (train_set_x,train_set_y)
 
     # train_set is a tuple containin two lists
