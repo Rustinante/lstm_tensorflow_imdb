@@ -31,7 +31,7 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 50
+    CELL_MAXLEN = 10
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
@@ -142,7 +142,7 @@ class LSTM_Model(object):
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
         print("Constructing graphs for cross entropy")
-        offset=1e-6
+        offset=1e-8
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities+offset), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
