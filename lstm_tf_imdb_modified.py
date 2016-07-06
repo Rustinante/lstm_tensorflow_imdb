@@ -67,7 +67,6 @@ class LSTM_Model(object):
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
         self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
         self.c_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
-        self.h_outputs_previous = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj], name='h_outputs_previous')
         self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
 
         def ortho_weight(ndim):
@@ -107,32 +106,39 @@ class LSTM_Model(object):
                                      ortho_weight(dim_proj)], axis=1)
             lstm_b = np.zeros((4 * 128,))
 
-            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
             lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
-                                          initializer=tf.constant_initializer(lstm_U))
-            lstm_b = tf.get_variable("lstm_b", shape=[BATCH_SIZE,dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
-
+                                     initializer=tf.constant_initializer(lstm_U))
+            lstm_b = tf.get_variable("lstm_b", shape=[BATCH_SIZE,dim_proj * 4], dtype=tf.float32,
+                                     initializer=tf.constant_initializer(lstm_b))
+            self.basin = tf.get_variable("basin", shape=[BATCH_SIZE,dim_proj,1],
+                                         dtype=tf.float32,initializer=tf.constant_initializer(0.0, dtype=tf.float32))
         self.h_outputs = []
-        self.h_outputs.append(tf.expand_dims(self.h_outputs_previous, -1))
+
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
-
-        self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, self.lstm_W) + lstm_b, self.h_0, self.c_0)
+        self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
         self.h_outputs.append(tf.expand_dims(self.h, -1))
 
-        for t in range(1,config.CELL_MAXLEN):
+        for t in range(1, config.CELL_MAXLEN):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
             self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, self.lstm_W) + lstm_b,
+                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
                                        self.h,
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
-
+        self.basin = tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin")
+        # To be used to drain the basin after the last segment of each batch of data
+        zero_basin = np.zeros([BATCH_SIZE,dim_proj],dtype=np.float32)
+        self.drain_basin = self.basin.assign(zero_basin)
+        # Stitch together all the previous h's
+        self.h_outputs = tf.reduce_sum(self.basin, 2)
+        # Tiling to operate on each of the dimensions of the representation of each data point in the 128-dimensional space
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
         pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
@@ -208,9 +214,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     cell_maxlen = config.CELL_MAXLEN
     h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
     c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
-    h_outputs = h_0
-    h = h_0
-    c_outputs = c_0
+    h_output = h_0
+    c_output = c_0
     if is_training:
         if flags.first_training_epoch:
             flags.first_training_epoch= False
@@ -237,23 +242,21 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
             #print(h_outputs)
             for i in range(num_times_to_feed-1):
-                h_outputs, h, c_outputs = session.run([m.h_outputs, m.h, m.c],
-                                                     feed_dict={m._inputs: x_mini_segments[i],
-                                                                m._targets: labels_mini,
-                                                                m._mask: mask_segments[i],
-                                                                m.h_0: h,
-                                                                m.c_0: c_outputs,
-                                                                m.h_outputs_previous: h_outputs,
-                                                                m.num_words_in_each_sentence: num_words_in_each_sentence})
+                h_output, c_output, _ = session.run([m.h, m.c, m.basin],
+                                              feed_dict={m._inputs: x_mini_segments[i],
+                                                         m._targets: labels_mini,
+                                                         m._mask: mask_segments[i],
+                                                         m.num_words_in_each_sentence: num_words_in_each_sentence,
+                                                         m.h_0: h_output,
+                                                         m.c_0: c_output})
 
-            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
+            num_correct_predictions, _1, _2 = session.run([m.num_correct_predictions, m.train_op, m.drain_basin],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[num_times_to_feed-1],
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                m.h_0: h,
-                                                                m.c_0: c_outputs,
-                                                                m.h_outputs_previous: h_outputs})
+                                                                m.h_0: h_output,
+                                                                m.c_0: c_output})
 
             total_num_correct_predictions+= num_correct_predictions
 
@@ -285,13 +288,12 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i: cell_maxlen * (i + 1)])
 
             for i in range(num_times_to_feed - 1):
-                h_outputs, c_outputs = session.run([m.h_outputs, m.c],
+                h_output, c_output = session.run([m.h_outputs, m.c],
                                                     feed_dict={m._inputs: x_mini_segments[i],
                                                              m._targets: labels_mini,
                                                              m._mask: mask_segments[i],
-                                                             m.h_0: h_outputs,
-                                                             m.c_0: c_outputs,
-                                                             m.h_outputs_previous: h_outputs,
+                                                             m.h_0: h_output,
+                                                             m.c_0: c_output,
                                                              m.num_words_in_each_sentence: num_words_in_each_sentence})
 
             cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
@@ -299,9 +301,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                        m._targets: labels_mini,
                                                                        m._mask: mask_segments[num_times_to_feed - 1],
                                                                        m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                       m.h_0: h_outputs,
-                                                                       m.c_0: c_outputs,
-                                                                       m.h_outputs_previous: h_outputs})
+                                                                       m.h_0: h_output,
+                                                                       m.c_0: c_output})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
 
