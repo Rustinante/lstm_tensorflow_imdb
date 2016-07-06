@@ -361,7 +361,8 @@ def main():
     del new_test_features, new_test_labels
 
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
-    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
+    graph_options = tf.GraphOptions(optimizer_options=tf.OptimizerOptions(opt_level=tf.OptimizerOptions.L2))
+    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options, graph_options=graph_options))
 
     with session.as_default():
         with tf.variable_scope("model"):
