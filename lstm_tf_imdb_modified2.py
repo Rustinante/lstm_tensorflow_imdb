@@ -64,7 +64,7 @@ class LSTM_Model(object):
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
         with tf.device("/cpu:0"):
-            self._inputs = tf.placeholder(tf.int64,[BATCH_SIZE],name='embedded_inputs')
+            self._inputs = tf.placeholder(tf.int64,[1,BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [1,BATCH_SIZE],name='mask')
         self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
