@@ -132,7 +132,7 @@ class LSTM_Model(object):
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2, keep_dims=True)  # (n_samples x dim_proj)
-        self.basin.assign(tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"),
+        self.push_to_basin = self.basin.assign(tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"),
                                                      keep_dims=True, reduction_indices=2))
 
         # To be used to drain the basin after the last segment of each batch of data
@@ -248,7 +248,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
             #print(h_outputs)
             for i in range(num_times_to_feed-1):
-                h_output, c_output, _ = session.run([m.h, m.c, m.basin],
+                h_output, c_output, _ = session.run([m.h, m.c, m.push_to_basin],
                                               feed_dict={m._inputs: x_mini_segments[i],
                                                          m._targets: labels_mini,
                                                          m._mask: mask_segments[i],
@@ -256,14 +256,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                          m.h_0: h_output,
                                                          m.c_0: c_output})
 
-            num_correct_predictions, _1 = session.run([m.num_correct_predictions, m.train_op],
+            num_correct_predictions, _1, _2 = session.run([m.num_correct_predictions, m.train_op, m.drain_basin],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
-                                                                m._targets: labels_mini,
-                                                                m._mask: mask_segments[num_times_to_feed-1],
-                                                                m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                m.h_0: h_output,
-                                                                m.c_0: c_output})
-            _ = session.run(m.drain_basin,feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[num_times_to_feed-1],
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence,
