@@ -27,7 +27,7 @@ from imdb2 import *
 dim_proj= 128
 BATCH_SIZE=16
 ACCURACY_THREASHOLD= 0.90
-np.random.seed(123)
+np.random.seed(13)
 
 class Options(object):
     DATA_MAXLEN = 100
