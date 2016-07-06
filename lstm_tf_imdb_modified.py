@@ -68,7 +68,7 @@ class LSTM_Model(object):
         self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
         self.c_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
         self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
-
+        self.grads_and_vars_aggregation=[]
         def ortho_weight(ndim):
             #np.random.seed(123)
             W = 0.1*np.random.randn(ndim, ndim)
@@ -151,8 +151,9 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities+offset), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-        self._train_op = tf.train.AdamOptimizer(config.learning_rate,beta1=0.99).minimize(self.cross_entropy)
-
+        opt = tf.train.AdamOptimizer(config.learning_rate,beta1=0.99)
+        self.grads_and_vars_local = opt.compute_gradients(self.cross_entropy)
+        self._train_op = opt.apply_gradients(self.grads_and_vars_aggregation.append(self.grads_and_vars_local))
         # To be used to drain the basin after the last segment of each batch of data
         zero_basin = np.zeros([BATCH_SIZE,dim_proj],dtype=np.float32)
         self.drain_basin = basin.assign(zero_basin)
@@ -246,15 +247,18 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 x_mini_segments.append(x_mini[cell_maxlen * i : cell_maxlen*(i+1)])
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
             #print(h_outputs)
+            grads_and_vars_aggregation=[]
             for i in range(num_times_to_feed-1):
-                h_output, c_output, _ = session.run([m.h, m.c, m.push_to_basin],
+                h_output, c_output, _, grads_and_vars_local = session.run([m.h, m.c, m.push_to_basin,m.grads_and_vars_local],
                                               feed_dict={m._inputs: x_mini_segments[i],
                                                          m._targets: labels_mini,
                                                          m._mask: mask_segments[i],
                                                          m.num_words_in_each_sentence: num_words_in_each_sentence,
                                                          m.h_0: h_output,
                                                          m.c_0: c_output})
+                grads_and_vars_aggregation+=grads_and_vars_local
 
+            m.grads_and_vars_aggregation=grads_and_vars_aggregation
             num_correct_predictions, _1, _2, _3 = session.run([m.num_correct_predictions, m.push_to_basin, m.train_op, m.drain_basin],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini,
@@ -361,8 +365,7 @@ def main():
     del new_test_features, new_test_labels
 
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
-    graph_options = tf.GraphOptions(optimizer_options=tf.OptimizerOptions(opt_level=tf.OptimizerOptions.L2))
-    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options, graph_options=graph_options))
+    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
     with session.as_default():
         with tf.variable_scope("model"):
