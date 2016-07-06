@@ -31,13 +31,12 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 100
+    CELL_MAXLEN = 10
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
-    valid_batch_size = 64  # The batch size used for validation/test set.
     use_dropout = True,  # if False slightly faster, but worst test error
     # This frequently need a bigger model.
     reload_model = None,  # Path to a saved model we want to start from.
@@ -145,7 +144,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities+offset), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-        self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+        self._train_op = tf.train.AdamOptimizer(0.0001,beta1=0.99).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -246,7 +245,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
-                #print(h_outputs)
 
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
@@ -256,8 +254,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h_0: h,
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs})
-
-
 
             total_num_correct_predictions+= num_correct_predictions
 
