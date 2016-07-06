@@ -137,8 +137,14 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     num_training_data= int(len(train_set)*0.8)
     num_testing_data= len(train_set)-num_training_data
 
-    test_set = train_set[num_training_data:]
-    train_set= train_set[:num_training_data]
+    test_set_x = [train_set[0][num_training_data:]]
+    test_set_y = [train_set[1][num_training_data:]]
+    test_set = (test_set_x,test_set_y)
+
+    train_set_x = [train_set_x[0][:num_training_data]]
+    train_set_y = [train_set_y[1][:num_training_data]]
+    train_set = (train_set_x,train_set_y)
+
     # train_set is a tuple containin two lists
     # train_set[0] is a list containing 25000 lists
     # train_set[1] is a list of integers from {0,1} representing the corresponding sentiments
@@ -157,7 +163,7 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
         del new_train_set_x, new_train_set_y
 
     # split training set into validation set
-    train_set_x, train_set_y = train_set
+
     # n_samples is the number of datapoints in train_set_x
     n_samples = len(train_set_x)
     sidx = np.random.permutation(n_samples)
