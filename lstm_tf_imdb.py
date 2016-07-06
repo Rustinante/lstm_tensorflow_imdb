@@ -48,7 +48,7 @@ class Options(object):
     MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 20
+    max_epoch = 100
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -244,8 +244,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
         if flags.first_validation_epoch or flags.testing_epoch:
             flags.first_validation_epoch= False
             flags.testing_epoch= False
-            print("For validation, total number of reviews is: %d" % total_num_reviews)
-            print("For validation, total number of batches is: %d" % total_num_batches)
+            print("For validation/testing, total number of reviews is: %d" % total_num_reviews)
+            print("For validation/testing, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
