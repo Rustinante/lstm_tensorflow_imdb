@@ -31,7 +31,7 @@ np.random.seed(123)
 
 class Options(object):
     DATA_MAXLEN = 100
-    CELL_MAXLEN = 10
+    CELL_MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
     max_epoch = 50
@@ -69,6 +69,7 @@ class LSTM_Model(object):
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
         self.h_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='h')
         self.c_0 = tf.placeholder(tf.float32, [BATCH_SIZE, dim_proj],name='c')
+        self.h_outputs_previous = tf.placeholder(tf.float32,[BATCH_SIZE, dim_proj], name='h_outputs_previous')
         self.num_words_in_each_sentence = tf.placeholder(dtype=tf.float32, shape=[1, BATCH_SIZE],name='num_words_in_each_sentence')
 
         def ortho_weight(ndim):
@@ -114,7 +115,7 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        self.h_outputs = [tf.expand_dims(self.h_0, -1)]
+        self.h_outputs = [tf.expand_dims(self.h_outputs_previous, -1)]
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
         self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
@@ -131,7 +132,6 @@ class LSTM_Model(object):
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
-
 
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
         pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
@@ -207,8 +207,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
     cell_maxlen = config.CELL_MAXLEN
     h_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
     c_0 = np.zeros([BATCH_SIZE, dim_proj], dtype='float32')
-    h_outputs=h_0
-    c_outputs=c_0
+    h_outputs = h = h_0
+    c_outputs = c_0
     if is_training:
         if flags.first_training_epoch:
             flags.first_training_epoch= False
@@ -235,12 +235,13 @@ def run_epoch(session, m, data, is_training, verbose=True):
                 mask_segments.append(mask[cell_maxlen * i : cell_maxlen*(i+1)])
 
             for i in range(num_times_to_feed-1):
-                h_outputs, c_outputs = session.run([m.h_outputs, m.c],
+                h_outputs, h, c_outputs = session.run([m.h_outputs, m.h, m.c],
                                                      feed_dict={m._inputs: x_mini_segments[i],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[i],
-                                                                m.h_0: h_outputs,
+                                                                m.h_0: h,
                                                                 m.c_0: c_outputs,
+                                                                m.h_outputs_previous: h_outputs,
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
 
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
@@ -248,8 +249,9 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[num_times_to_feed-1],
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence,
-                                                                m.h_0: h_outputs,
-                                                                m.c_0: c_outputs})
+                                                                m.h_0: h,
+                                                                m.c_0: c_outputs,
+                                                                m.h_outputs_previous: h_outputs})
 
 
             total_num_correct_predictions+= num_correct_predictions
@@ -288,6 +290,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                              m._mask: mask_segments[i],
                                                              m.h_0: h_outputs,
                                                              m.c_0: c_outputs,
+                                                             m.h_outputs_previous: h_outputs,
                                                              m.num_words_in_each_sentence: num_words_in_each_sentence})
 
             cost, num_correct_predictions = session.run([m.cost, m.num_correct_predictions],
@@ -296,7 +299,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                        m._mask: mask_segments[num_times_to_feed - 1],
                                                                        m.num_words_in_each_sentence: num_words_in_each_sentence,
                                                                        m.h_0: h_outputs,
-                                                                       m.c_0: c_outputs})
+                                                                       m.c_0: c_outputs,
+                                                                       m.h_outputs_previous: h_outputs})
             total_cost += cost
             total_num_correct_predictions += num_correct_predictions
 
