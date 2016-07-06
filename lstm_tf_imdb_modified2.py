@@ -86,7 +86,7 @@ class LSTM_Model(object):
                 word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
-            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+            embedded_inputs = tf.nn.embedding_lookup(word_embedding, self._inputs)
 
             # softmax weights and bias
             #np.random.seed(123)
