@@ -112,7 +112,7 @@ class LSTM_Model(object):
                                      initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[BATCH_SIZE,dim_proj * 4], dtype=tf.float32,
                                      initializer=tf.constant_initializer(lstm_b))
-            self.basin = tf.get_variable("basin", shape=[BATCH_SIZE,dim_proj,1],
+            basin = tf.get_variable("basin", shape=[BATCH_SIZE,dim_proj,1],
                                          dtype=tf.float32,initializer=tf.constant_initializer(0.0, dtype=tf.float32))
         self.h_outputs = []
 
@@ -131,12 +131,11 @@ class LSTM_Model(object):
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
 
-        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2, keep_dims=True)  # (n_samples x dim_proj)
-        self.push_to_basin = self.basin.assign(tf.reduce_sum(tf.concat(2, [self.basin, self.h_outputs], name="concatenate_basin"),
-                                                     keep_dims=True, reduction_indices=2))
+        self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
+        self.push_to_basin = basin.assign_add(self.h_outputs)
 
         # Stitch together all the previous h's
-        self.h_outputs = tf.reduce_sum(self.basin, 2, keep_dims=False)
+        self.h_outputs = basin
 
         # Tiling to operate on each of the dimensions of the representation of each data point in the 128-dimensional space
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
@@ -156,7 +155,7 @@ class LSTM_Model(object):
 
         # To be used to drain the basin after the last segment of each batch of data
         zero_basin = np.zeros([BATCH_SIZE,dim_proj, 1],dtype=np.float32)
-        self.drain_basin = self.basin.assign(zero_basin)
+        self.drain_basin = basin.assign(zero_basin)
         print("Finished constructing the graph")
 
 
