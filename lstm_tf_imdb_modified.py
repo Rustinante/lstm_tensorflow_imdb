@@ -256,7 +256,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h_0: h,
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs})
-            #print(h_outputs)
+            print(h_outputs)
 
 
             total_num_correct_predictions+= num_correct_predictions
