@@ -154,7 +154,7 @@ class LSTM_Model(object):
         self._train_op = tf.train.AdamOptimizer(config.learning_rate,beta1=0.99).minimize(self.cross_entropy)
 
         # To be used to drain the basin after the last segment of each batch of data
-        zero_basin = np.zeros([BATCH_SIZE,dim_proj, 1],dtype=np.float32)
+        zero_basin = np.zeros([BATCH_SIZE,dim_proj],dtype=np.float32)
         self.drain_basin = basin.assign(zero_basin)
         print("Finished constructing the graph")
 
