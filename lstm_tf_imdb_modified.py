@@ -30,7 +30,7 @@ ACCURACY_THREASHOLD= 0.85
 np.random.seed(123)
 
 class Options(object):
-    DATA_MAXLEN = 200
+    DATA_MAXLEN = 100
     CELL_MAXLEN = 10
     VALIDATION_PORTION = 0.05
     patience = 10
