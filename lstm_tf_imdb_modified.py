@@ -109,7 +109,7 @@ class LSTM_Model(object):
                                      ortho_weight(dim_proj)], axis=1)
             lstm_b = np.zeros((4 * 128,))
 
-            lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+            self.lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_W))
             lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
                                           initializer=tf.constant_initializer(lstm_U))
@@ -120,7 +120,7 @@ class LSTM_Model(object):
         mask_slice = tf.slice(self._mask, [0, 0], [1, -1])
         inputs_slice = tf.squeeze(tf.slice(embedded_inputs, [0, 0, 0], [1, -1, -1]))
 
-        self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, lstm_W) + lstm_b, self.h_0, self.c_0)
+        self.h, self.c = self.step(mask_slice, tf.matmul(inputs_slice, self.lstm_W) + lstm_b, self.h_0, self.c_0)
         self.h_outputs.append(tf.expand_dims(self.h, -1))
 
         for t in range(1,config.CELL_MAXLEN):
@@ -128,7 +128,7 @@ class LSTM_Model(object):
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
 
             self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
+                                       tf.matmul(inputs_slice, self.lstm_W) + lstm_b,
                                        self.h,
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
@@ -248,7 +248,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.num_words_in_each_sentence: num_words_in_each_sentence})
                 #print(h_outputs)
 
-            h_outputs, num_correct_predictions, _ = session.run([m.h_outputs, m.num_correct_predictions, m.train_op],
+            lstm_W, num_correct_predictions, _ = session.run([m.lstm_W, m.num_correct_predictions, m.train_op],
                                                      feed_dict={m._inputs: x_mini_segments[num_times_to_feed-1],
                                                                 m._targets: labels_mini,
                                                                 m._mask: mask_segments[num_times_to_feed-1],
@@ -256,7 +256,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m.h_0: h,
                                                                 m.c_0: c_outputs,
                                                                 m.h_outputs_previous: h_outputs})
-            print(h_outputs)
+            print(lstm_W)
 
 
             total_num_correct_predictions+= num_correct_predictions
