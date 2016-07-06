@@ -134,7 +134,7 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
         f = open(path, 'rb')
 
     train_set = pickle.load(f)
-    num_training_data= int(len(train_set)*0.8)
+    num_training_data= int(len(train_set[0])*0.8)
     num_testing_data= len(train_set)-num_training_data
 
     test_set_x = [train_set[0][num_training_data:]]
@@ -144,7 +144,7 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     train_set_x = [train_set[0][:num_training_data]]
     train_set_y = [train_set[1][:num_training_data]]
     train_set = (train_set_x,train_set_y)
-    
+
     # train_set is a tuple containin two lists
     # train_set[0] is a list containing 25000 lists
     # train_set[1] is a list of integers from {0,1} representing the corresponding sentiments
@@ -165,13 +165,12 @@ def load_data(path="imdb.pkl", n_words=100000, validation_portion=0.1, maxlen=No
     # split training set into validation set
 
     # n_samples is the number of datapoints in train_set_x
-    n_samples = len(train_set_x)
-    sidx = np.random.permutation(n_samples)
-    n_train = int(np.round(n_samples * (1. - validation_portion)))
-    valid_set_x = [train_set_x[s] for s in sidx[n_train:]]
-    valid_set_y = [train_set_y[s] for s in sidx[n_train:]]
-    train_set_x = [train_set_x[s] for s in sidx[:n_train]]
-    train_set_y = [train_set_y[s] for s in sidx[:n_train]]
+    sidx = np.random.permutation(num_training_data)
+    actual_n_train = int(np.round(n_samples * (1. - validation_portion)))
+    valid_set_x = [train_set_x[s] for s in sidx[actual_n_train:]]
+    valid_set_y = [train_set_y[s] for s in sidx[actual_n_train:]]
+    train_set_x = [train_set_x[s] for s in sidx[:actual_n_train]]
+    train_set_y = [train_set_y[s] for s in sidx[:actual_n_train]]
 
     train_set = (train_set_x, train_set_y)
     valid_set = (valid_set_x, valid_set_y)
