@@ -237,7 +237,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
 
         print("Traversed through %d samples." %num_samples_seen)
-        return np.asscalar(avg_accuracy)
+        
 
     else:
         if flags.first_validation_epoch or flags.testing_epoch:
