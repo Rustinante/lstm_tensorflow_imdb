@@ -112,12 +112,12 @@ class LSTM_Model(object):
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
 
         (self.h_outputs, final_state) = tf.nn.rnn(cell, list_of_inputs,initial_state=self._initial_state ,sequence_length=num_words_in_each_sentence)
-
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-
-        pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
-        # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
-
+        pool_mean=[]
+        for i in range(BATCH_SIZE):
+            pool_mean.append(tf.expand_dims(tf.div(tf.reduce_sum(self.h_outputs[i],reduction_indices=0),
+                                   tf.squeeze(tf.slice(num_words_in_each_sentence,[i,0],[1,-1]))),0))
+            pool_mean=tf.concat(0,pool_mean)
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
