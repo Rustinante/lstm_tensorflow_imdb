@@ -94,9 +94,9 @@ class LSTM_Model(object):
             unrolled_inputs=tf.reshape(self._inputs,[1,-1])
             embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
             embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
-            list_of_inputs=[]
+            self.list_of_inputs=[]
             for i in range(BATCH_SIZE):
-                list_of_inputs.append(tf.squeeze(tf.slice(embedded_inputs,[0,i,0],[-1,1,-1])))
+                self.list_of_inputs.append(tf.squeeze(tf.slice(embedded_inputs,[0,i,0],[-1,1,-1])))
             cell = tf.nn.rnn_cell.BasicLSTMCell(dim_proj, forget_bias=0.0)
             self._initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
             state = self._initial_state
