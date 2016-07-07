@@ -237,7 +237,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
 
 
         print("Traversed through %d samples." %num_samples_seen)
-        
+
 
     else:
         if flags.first_validation_epoch or flags.testing_epoch:
@@ -304,8 +304,8 @@ def main():
     test_data=(new_test_features,new_test_labels)
     del new_test_features, new_test_labels
 
-    GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
-    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
+    #GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
+    session = tf.Session()
 
     with session.as_default():
         with tf.variable_scope("model"):
