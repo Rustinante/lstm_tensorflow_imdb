@@ -53,7 +53,7 @@ class Options(object):
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
     saveFreq = 1110  # Save the parameters after every saveFreq updates
-    valid_batch_size = 128  # The batch size used for validation/test set.
+    valid_batch_size = 16  # The batch size used for validation/test set.
     use_dropout = True,  # if False slightly faster, but worst test error
     # This frequently need a bigger model.
     reload_model = None,  # Path to a saved model we want to start from.
