@@ -33,13 +33,13 @@ from __future__ import print_function
 import time
 import numpy as np
 import tensorflow as tf
-from imdb3 import *
+from imdb import *
 
 
 
 dim_proj= 128
 BATCH_SIZE=16
-ACCURACY_THREASHOLD= 0.85
+ACCURACY_THREASHOLD= 0.82
 np.random.seed(123)
 
 
@@ -48,7 +48,7 @@ class Options(object):
     MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 100
+    max_epoch = 20
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -81,8 +81,8 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-        with tf.device("/cpu:0"):
-            self._inputs = tf.placeholder(tf.int64,[config.MAXLEN, BATCH_SIZE],name='embedded_inputs')
+
+        self._inputs = tf.placeholder(tf.int64,[config.MAXLEN,BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
@@ -96,11 +96,10 @@ class LSTM_Model(object):
             # initialize a word_embedding scheme out of random
             #np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
-            with tf.device("/cpu:0"):
-                word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
+            word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
-            unrolled_inputs=tf.reshape(self._inputs, [1,-1])
+            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
             embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
             embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
 
@@ -204,6 +203,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
     if is_training not in [True,False]:
         raise ValueError("mode must be one of [True, False] but received ", is_training)
 
+    start_time = time.time()
     total_cost = 0.0
     num_samples_seen= 0
     total_num_correct_predictions= 0
@@ -228,23 +228,23 @@ def run_epoch(session, m, data, is_training, verbose=True):
             # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
             num_samples_seen += x_mini.shape[1]
-            _ = session.run([ m.train_op],
-                            feed_dict={m._inputs: x_mini,
-                                    m._targets: labels_mini,
-                                    m._mask: mask})
+            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
+                                                     feed_dict={m._inputs: x_mini,
+                                                                m._targets: labels_mini,
+                                                                m._mask: mask})
             #print(m.lstm_W.eval())
+            total_num_correct_predictions+= num_correct_predictions
 
-
-
+        avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
-
+        return np.asscalar(avg_accuracy)
 
     else:
         if flags.first_validation_epoch or flags.testing_epoch:
             flags.first_validation_epoch= False
             flags.testing_epoch= False
-            print("For validation/testing, total number of reviews is: %d" % total_num_reviews)
-            print("For validation/testing, total number of batches is: %d" % total_num_batches)
+            print("For validation, total number of reviews is: %d" % total_num_reviews)
+            print("For validation, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
@@ -304,8 +304,8 @@ def main():
     test_data=(new_test_features,new_test_labels)
     del new_test_features, new_test_labels
 
-    #GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
-    session = tf.Session()
+    GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
+    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
     with session.as_default():
         with tf.variable_scope("model"):
@@ -316,18 +316,14 @@ def main():
         print("Initialized all variables")
         saver = tf.train.Saver()
         try:
-            start_time = time.time()
             for i in range(config.max_epoch):
                 epoch_number= i+1
                 print("\nTraining")
                 m.assign_lr(session, config.learning_rate)
                 print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
-                run_epoch(session, m, train_data, is_training=True)
-                #print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
-                if epoch_number==20:
-                    total_time=time.time()-start_time
-                    print("total time: ", total_time)
-                """
+                average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
+                print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
+
                 if epoch_number%5 == 0:
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
@@ -338,12 +334,11 @@ def main():
                     if epoch_number%10 == 0:
                         path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
-                """
         except KeyboardInterrupt:
             pass
         print("\nTesting")
 
-        flags.testing_epoch=True
+        config.testing_epoch=True
         config.MAXLEN = config.max_sentence_length_for_testing
         with tf.variable_scope("model",reuse=True):
             m_test = LSTM_Model(is_training=False)
