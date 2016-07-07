@@ -39,7 +39,7 @@ from imdb import *
 
 dim_proj= 128
 BATCH_SIZE=16
-ACCURACY_THREASHOLD= 0.82
+ACCURACY_THREASHOLD= 0.95
 np.random.seed(123)
 
 
@@ -225,6 +225,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For training, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
+            print("mini batch: "mini_batch_number)
             # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
             num_samples_seen += x_mini.shape[1]
