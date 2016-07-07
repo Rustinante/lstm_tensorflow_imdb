@@ -228,14 +228,14 @@ def run_epoch(session, m, data, is_training, verbose=True):
             # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
             num_samples_seen += x_mini.shape[1]
-            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
-                                                     feed_dict={m._inputs: x_mini,
-                                                                m._targets: labels_mini,
-                                                                m._mask: mask})
+            _ = session.run([ m.train_op],
+                            feed_dict={m._inputs: x_mini,
+                                    m._targets: labels_mini,
+                                    m._mask: mask})
             #print(m.lstm_W.eval())
-            total_num_correct_predictions+= num_correct_predictions
 
-        avg_accuracy = total_num_correct_predictions/num_samples_seen
+
+
         print("Traversed through %d samples." %num_samples_seen)
         return np.asscalar(avg_accuracy)
 
