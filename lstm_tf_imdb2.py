@@ -90,34 +90,33 @@ class LSTM_Model(object):
             with tf.device("/cpu:0"):
                 word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
-
-            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
-            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
-            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
-            self.list_of_inputs=[]
-            for i in range(BATCH_SIZE):
-                self.list_of_inputs.append(tf.squeeze(tf.slice(embedded_inputs,[0,i,0],[-1,1,-1])))
-            cell = tf.nn.rnn_cell.BasicLSTMCell(dim_proj, forget_bias=0.0)
-            self._initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
-            state = self._initial_state
-            # softmax weights and bias
-            #np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
             softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
-                                             initializer=tf.constant_initializer(softmax_w))
+                                        initializer=tf.constant_initializer(softmax_w))
             softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
-                                             initializer=tf.constant_initializer(0, tf.float32))
+                                        initializer=tf.constant_initializer(0, tf.float32))
 
+        unrolled_inputs=tf.reshape(self._inputs,[1,-1])
+        embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+        embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
+        self.list_of_inputs=[]
+        self.pool_mean = []
+        for i in range(BATCH_SIZE):
+            self.list_of_inputs.append(tf.squeeze(tf.slice(embedded_inputs,[0,i,0],[-1,1,-1])))
+        cell = tf.nn.rnn_cell.BasicLSTMCell(dim_proj, forget_bias=0.0)
+        self._initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
+        state = self._initial_state
+        # softmax weights and bias
+        #np.random.seed(123)
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-
         (self.h_outputs, final_state) = tf.nn.rnn(cell, self.list_of_inputs,initial_state=self._initial_state ,sequence_length=num_words_in_each_sentence)
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        self.pool_mean=[]
+
         for i in range(BATCH_SIZE):
             self.pool_mean.append(tf.expand_dims(tf.div(tf.reduce_sum(self.h_outputs[i],reduction_indices=0),
                                    tf.squeeze(tf.slice(tiled_num_words_in_each_sentence,[i,0],[1,-1]))),0))
-            self.pool_mean=tf.concat(0,self.pool_mean)
+        self.pool_mean=tf.concat(0,self.pool_mean)
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(self.pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
