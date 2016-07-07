@@ -111,7 +111,7 @@ class LSTM_Model(object):
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
 
-        (self.h_outputs, final_state) = tf.nn.rnn(cell, list_of_inputs, sequence_length=num_words_in_each_sentence)
+        (self.h_outputs, final_state) = tf.nn.rnn(cell, list_of_inputs,initial_state=self._initial_state ,sequence_length=num_words_in_each_sentence)
 
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
 
