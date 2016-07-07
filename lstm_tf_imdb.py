@@ -38,7 +38,7 @@ from imdb import *
 
 
 dim_proj= 128
-BATCH_SIZE=64
+BATCH_SIZE=16
 ACCURACY_THREASHOLD= 0.95
 np.random.seed(123)
 
