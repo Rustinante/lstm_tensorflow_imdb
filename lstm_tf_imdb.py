@@ -203,7 +203,6 @@ def run_epoch(session, m, data, is_training, verbose=True):
     if is_training not in [True,False]:
         raise ValueError("mode must be one of [True, False] but received ", is_training)
 
-    start_time = time.time()
     total_cost = 0.0
     num_samples_seen= 0
     total_num_correct_predictions= 0
@@ -317,6 +316,7 @@ def main():
         session.run(tf.initialize_all_variables())
         print("Initialized all variables")
         saver = tf.train.Saver()
+        start_time = time.time()
         try:
             for i in range(config.max_epoch):
                 epoch_number= i+1
@@ -325,7 +325,9 @@ def main():
                 print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
                 average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
-
+                if epoch_number==20:
+                    print("total time is:",time.time()-start_time)
+                """
                 if epoch_number%5 == 0:
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
@@ -336,6 +338,7 @@ def main():
                     if epoch_number%10 == 0:
                         path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
+                """
         except KeyboardInterrupt:
             pass
         print("\nTesting")
