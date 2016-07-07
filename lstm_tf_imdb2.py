@@ -113,13 +113,13 @@ class LSTM_Model(object):
 
         (self.h_outputs, final_state) = tf.nn.rnn(cell, self.list_of_inputs,initial_state=self._initial_state ,sequence_length=num_words_in_each_sentence)
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-        pool_mean=[]
+        self.pool_mean=[]
         for i in range(BATCH_SIZE):
-            pool_mean.append(tf.expand_dims(tf.div(tf.reduce_sum(self.h_outputs[i],reduction_indices=0),
+            self.pool_mean.append(tf.expand_dims(tf.div(tf.reduce_sum(self.h_outputs[i],reduction_indices=0),
                                    tf.squeeze(tf.slice(tiled_num_words_in_each_sentence,[i,0],[1,-1]))),0))
-            pool_mean=tf.concat(0,pool_mean)
+            self.pool_mean=tf.concat(0,self.pool_mean)
         offset = 1e-8
-        softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+        softmax_probabilities = tf.nn.softmax(tf.matmul(self.pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
         self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
         print("Constructing graphs for cross entropy")
