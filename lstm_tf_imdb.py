@@ -96,8 +96,7 @@ class LSTM_Model(object):
             # initialize a word_embedding scheme out of random
             #np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
-            with tf.device('/cpu:0'):
-                word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
+            word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
             unrolled_inputs=tf.reshape(self._inputs,[1,-1])
@@ -159,7 +158,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-            self._train_op = tf.train.AdadeltaOptimizer(0.0001,rho=0.9999).minimize(self.cross_entropy)
+            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -228,6 +227,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
             #print("mini batch: %d" %mini_batch_number)
             # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
+
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
             num_samples_seen += x_mini.shape[1]
             num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
