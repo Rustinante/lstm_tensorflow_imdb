@@ -91,8 +91,12 @@ class LSTM_Model(object):
                 word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
-            embedded_inputs = tf.nn.embedding_lookup(word_embedding, self._inputs)
+            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
+            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
             embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
+            list_of_inputs=[]
+            for i in BATCH_SIZE:
+                list_of_inputs.append(tf.slice(embedded_inputs,[0,i,0],[-1,1,-1]))
             cell = tf.nn.rnn_cell.BasicLSTMCell(dim_proj, forget_bias=0.0)
             self._initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
             state = self._initial_state
@@ -107,7 +111,7 @@ class LSTM_Model(object):
 
         num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
 
-        (self.h_outputs, final_state) = tf.nn.rnn(cell, embedded_inputs, sequence_length=num_words_in_each_sentence)
+        (self.h_outputs, final_state) = tf.nn.rnn(cell, list_of_inputs, sequence_length=num_words_in_each_sentence)
 
         tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
 
