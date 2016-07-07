@@ -116,7 +116,7 @@ class LSTM_Model(object):
         pool_mean=[]
         for i in range(BATCH_SIZE):
             pool_mean.append(tf.expand_dims(tf.div(tf.reduce_sum(self.h_outputs[i],reduction_indices=0),
-                                   tf.squeeze(tf.slice(tile_num_words_in_each_sentence,[i,0],[1,-1]))),0))
+                                   tf.squeeze(tf.slice(tiled_num_words_in_each_sentence,[i,0],[1,-1]))),0))
             pool_mean=tf.concat(0,pool_mean)
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
