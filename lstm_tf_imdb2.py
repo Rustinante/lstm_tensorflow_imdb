@@ -91,8 +91,7 @@ class LSTM_Model(object):
                 word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
-            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
-            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+            embedded_inputs = tf.nn.embedding_lookup(word_embedding, self._inputs)
             embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
             cell = tf.nn.rnn_cell.BasicLSTMCell(dim_proj, forget_bias=0.0)
             self._initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
