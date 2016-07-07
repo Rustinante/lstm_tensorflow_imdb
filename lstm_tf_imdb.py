@@ -158,7 +158,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+            self._train_op = tf.train.AdadeltaOptimizer(0.0001,rho=0.9999).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -225,7 +225,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
             print("For training, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-            print("mini batch: %d" %mini_batch_number)
+            #print("mini batch: %d" %mini_batch_number)
             # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
             num_samples_seen += x_mini.shape[1]
