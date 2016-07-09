@@ -176,6 +176,8 @@ class LSTM_Model(object):
         temp_W_h = tf.slice(lstm_W,[0,dim_proj*2],[-1,dim_proj])
         h = tf.tanh(tf.matmul(input,temp_U_h)+tf.matmul(tf.mul(cell_previous,r),temp_W_h))
         s_t = tf.mul((1-z),h) + tf.mul(z,cell_previous)
+        s_t = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * s_t + tf.tile(
+            tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
 
         return s_t
 
@@ -332,7 +334,7 @@ def main():
                     if epoch_number%10 == 0:
                         path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
-                
+
         except KeyboardInterrupt:
             pass
         print("\nTesting")
