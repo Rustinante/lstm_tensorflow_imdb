@@ -321,7 +321,7 @@ def main():
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
                 if epoch_number==20:
                     print("total time is:",time.time()-start_time)
-                """
+
                 if epoch_number%5 == 0:
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
@@ -332,7 +332,7 @@ def main():
                     if epoch_number%10 == 0:
                         path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
-                """
+                
         except KeyboardInterrupt:
             pass
         print("\nTesting")
