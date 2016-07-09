@@ -48,7 +48,7 @@ class Options(object):
     MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 20
+    max_epoch = 200
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -127,7 +127,6 @@ class LSTM_Model(object):
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 3], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = BATCH_SIZE
-        self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.c = np.zeros([n_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
 
@@ -137,7 +136,7 @@ class LSTM_Model(object):
             self.c = self.step(mask_slice,
                                inputs_slice,
                                self.c)
-            self.h_outputs.append(tf.expand_dims(self.h, -1))
+            self.h_outputs.append(tf.expand_dims(self.c, -1))
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
@@ -169,9 +168,9 @@ class LSTM_Model(object):
 
         temp_W = tf.slice(lstm_W,[0,0],[-1,dim_proj*2])
         temp_U = tf.slice(lstm_U,[0,0],[-1,dim_proj*2])
-        z_r = tf.sigmoid(tf.matmul(input,temp_U)+tf.matmul(cell_previous,lstm_W))
+        z_r = tf.sigmoid(tf.matmul(input,temp_U)+tf.matmul(cell_previous,temp_W))
         z = tf.slice(z_r, [0,0],[-1,dim_proj])
-        r = tf.xlice(z_r,[0,dim_proj],[-1,dim_proj])
+        r = tf.slice(z_r,[0,dim_proj],[-1,dim_proj])
 
         temp_U_h = tf.slice(lstm_U,[0,dim_proj*2],[-1,dim_proj])
         temp_W_h = tf.slice(lstm_W,[0,dim_proj*2],[-1,dim_proj])
