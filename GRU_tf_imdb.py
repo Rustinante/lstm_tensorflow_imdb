@@ -330,7 +330,7 @@ def main():
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
                     print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
                     print("\nTesting")
-                    config.testing_epoch = True
+                    flags.testing_epoch = True
                     testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
                     print("Testing accuracy is: %.4f" % testing_accuracy)
                     if validation_accuracy > ACCURACY_THREASHOLD:
