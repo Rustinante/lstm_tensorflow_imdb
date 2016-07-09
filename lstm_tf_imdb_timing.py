@@ -311,10 +311,12 @@ def main():
                 epoch_number= i+1
                 print("\nTraining")
                 m.assign_lr(session, config.learning_rate)
+                epoch_start=time.time()
                 print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
                 average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
                 print("Time taken:", time.time() - start_time)
+                print("Epoch time:", time.time() - epoch_start)
                 if epoch_number==20:
                     print("total time is:",time.time()-start_time)
                 """
