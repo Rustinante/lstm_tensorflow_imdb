@@ -48,7 +48,7 @@ class Options(object):
     MAXLEN = 100
     VALIDATION_PORTION = 0.05
     patience = 10
-    max_epoch = 20
+    max_epoch = 50
     decay_c = 0.  # Weight decay for the classifier applied to the U weights.
     VOCABULARY_SIZE = 10000  # Vocabulary size
     saveto = 'lstm_model.npz'  # The best model will be saved there
@@ -100,19 +100,20 @@ class LSTM_Model(object):
         embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
         embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
         self.list_of_inputs=[]
-        self.pool_mean = []
+
         for i in range(BATCH_SIZE):
-            self.list_of_inputs.append(tf.squeeze(tf.slice(embedded_inputs,[0,i,0],[-1,1,-1])))
-        cell = tf.nn.rnn_cell.BasicLSTMCell(dim_proj, forget_bias=0.0)
+            self.list_of_inputs.append(tf.squeeze(tf.slice(embedded_inputs,[i,0,0],[1,-1,-1])))
+        cell = tf.nn.rnn_cell.LSTMCell(dim_proj, use_peepholes=True)
         self._initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
         state = self._initial_state
         # softmax weights and bias
         #np.random.seed(123)
 
-        num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
-        (self.h_outputs, final_state) = tf.nn.rnn(cell, self.list_of_inputs,initial_state=self._initial_state ,sequence_length=num_words_in_each_sentence)
-        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
-
+        self.num_words_in_each_sentence = tf.reduce_sum(self._mask, reduction_indices=0)
+        (self.h_outputs, final_state) = tf.nn.rnn(cell, self.list_of_inputs,initial_state=self._initial_state,
+                                                  sequence_length=self.num_words_in_each_sentence)
+        tiled_num_words_in_each_sentence = tf.tile(tf.reshape(self.num_words_in_each_sentence, [-1, 1]), [1, dim_proj])
+        self.pool_mean = []
         for i in range(BATCH_SIZE):
             self.pool_mean.append(tf.expand_dims(tf.div(tf.reduce_sum(self.h_outputs[i],reduction_indices=0),
                                    tf.squeeze(tf.slice(tiled_num_words_in_each_sentence,[i,0],[1,-1]))),0))
@@ -125,7 +126,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if is_training:
             print("Trainable variables: ", tf.trainable_variables())
-            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+            self._train_op = tf.train.AdamOptimizer(0.001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -202,6 +203,7 @@ def run_epoch(session, m, data, is_training, verbose=True):
                                                                 m._mask: mask})
             #print(m.lstm_W.eval())
             total_num_correct_predictions+= num_correct_predictions
+            print("num_words_in_each_sentence: ",num_words_in_each_sentence)
 
         avg_accuracy = total_num_correct_predictions/num_samples_seen
         print("Traversed through %d samples." %num_samples_seen)
