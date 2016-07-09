@@ -164,16 +164,19 @@ class LSTM_Model(object):
         with tf.variable_scope(self.RNN_name_scope, reuse=True):
             lstm_U = tf.get_variable("lstm_U")
             lstm_W = tf.get_variable("lstm_W")
+            lstm_b = tf.get_variable("lstm_b")
 
         temp_W = tf.slice(lstm_W,[0,0],[-1,dim_proj*2])
         temp_U = tf.slice(lstm_U,[0,0],[-1,dim_proj*2])
+        temp_b = tf.slice(lstm_b,[0],[dim_proj*2])
         z_r = tf.sigmoid(tf.matmul(input,temp_U)+tf.matmul(cell_previous,temp_W))
         z = tf.slice(z_r, [0,0],[-1,dim_proj])
         r = tf.slice(z_r,[0,dim_proj],[-1,dim_proj])
 
         temp_U_h = tf.slice(lstm_U,[0,dim_proj*2],[-1,dim_proj])
         temp_W_h = tf.slice(lstm_W,[0,dim_proj*2],[-1,dim_proj])
-        h = tf.tanh(tf.matmul(input,temp_U_h)+tf.matmul(tf.mul(cell_previous,r),temp_W_h))
+        temp_b_h = tf.slice(lstm_b,[dim_proj*2],[dim_proj])
+        h = tf.tanh(tf.matmul(input,temp_U_h)+tf.matmul(tf.mul(cell_previous,r),temp_W_h)+temp_b_h)
         s_t = tf.mul((1-z),h) + tf.mul(z,cell_previous)
         s_t = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * s_t + tf.tile(
             tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
