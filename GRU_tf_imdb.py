@@ -306,6 +306,8 @@ def main():
     with session.as_default():
         with tf.variable_scope("model"):
             m = LSTM_Model()
+        with tf.variable_scope("model", reuse=True):
+            m_test = LSTM_Model(is_training=False)
 
         print("Initializing all variables")
         session.run(tf.initialize_all_variables())
@@ -327,6 +329,10 @@ def main():
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
                     print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
+                    print("\nTesting")
+                    config.testing_epoch = True
+                    testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
+                    print("Testing accuracy is: %.4f" % testing_accuracy)
                     if validation_accuracy > ACCURACY_THREASHOLD:
                         print("Validation accuracy reached the threashold. Breaking")
                         break
@@ -336,14 +342,10 @@ def main():
 
         except KeyboardInterrupt:
             pass
-        print("\nTesting")
 
-        config.testing_epoch=True
-        config.MAXLEN = config.max_sentence_length_for_testing
-        with tf.variable_scope("model",reuse=True):
-            m_test = LSTM_Model(is_training=False)
-        testing_accuracy = run_epoch(session, m_test, test_data, is_training=False)
-        print("Testing accuracy is: %.4f" %testing_accuracy)
+        #config.MAXLEN = config.max_sentence_length_for_testing
+
+
 
 
 if __name__ == "__main__":
