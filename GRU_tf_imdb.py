@@ -242,8 +242,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
         if flags.first_validation_epoch or flags.testing_epoch:
             flags.first_validation_epoch= False
             flags.testing_epoch= False
-            print("For validation, total number of reviews is: %d" % total_num_reviews)
-            print("For validation, total number of batches is: %d" % total_num_batches)
+            print("For validation/testing, total number of reviews is: %d" % total_num_reviews)
+            print("For validation/testing, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
@@ -270,11 +270,7 @@ def words_to_embedding(word_embedding, word_matrix):
     one_hot=np.zeros((dim0, config.VOCABULARY_SIZE),dtype=np.float32)
     for i in range(dim0):
         one_hot[i, int(unrolled_matrix[i])] = 1
-    '''
-    on_value = float(1)
-    off_value = float(0)
-    one_hot = tf.one_hot(indices=unrolled_matrix, depth=config.VOCABULARY_SIZE, on_value=on_value, off_value=off_value, axis=1)
-    '''
+
     embedded_words = tf.matmul(one_hot, word_embedding)
     embedded_words = tf.reshape(embedded_words, [maxlen, n_samples, dim_proj])
     print("embedded_words has dimension = (%d x %d x %d) "%(maxlen, n_samples, dim_proj))
