@@ -141,7 +141,7 @@ class LSTM_Model(object):
 
         self.h_outputs = tf.reduce_sum(tf.concat(2, self.h_outputs), 2)  # (n_samples x dim_proj)
 
-        pool_mean = tf.div(self.h_outputs, tf.constant(100,shape=[BATCH_SIZE,128]))
+        pool_mean = tf.div(self.h_outputs, tf.constant(100,dtype=tf.float32,shape=[BATCH_SIZE,128]))
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
 
         offset = 1e-8
@@ -314,6 +314,7 @@ def main():
                 print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
                 average_training_accuracy = run_epoch(session, m, train_data, is_training=True)
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
+                print("Time taken:", time.time() - start_time)
                 if epoch_number==20:
                     print("total time is:",time.time()-start_time)
                 """
