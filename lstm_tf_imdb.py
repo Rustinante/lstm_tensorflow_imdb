@@ -149,7 +149,7 @@ class LSTM_Model(object):
 
         pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
-
+        poo_mean = tf.nn.dropout(pool_mean, 0.5)
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
@@ -327,7 +327,7 @@ def main():
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
                 if epoch_number==20:
                     print("total time is:",time.time()-start_time)
-                """
+
                 if epoch_number%5 == 0:
                     print("\nValidating")
                     validation_accuracy = run_epoch(session, m, validation_data, is_training=False)
@@ -338,7 +338,7 @@ def main():
                     if epoch_number%10 == 0:
                         path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
                         print("Saved parameters to %s" %path)
-                """
+
         except KeyboardInterrupt:
             pass
         print("\nTesting")
