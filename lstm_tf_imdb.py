@@ -245,8 +245,8 @@ def run_epoch(session, m, data, is_training, verbose=True):
         if flags.first_validation_epoch or flags.testing_epoch:
             flags.first_validation_epoch= False
             flags.testing_epoch= False
-            print("For validation, total number of reviews is: %d" % total_num_reviews)
-            print("For validation, total number of batches is: %d" % total_num_batches)
+            print("For validation/testing, total number of reviews is: %d" % total_num_reviews)
+            print("For validation/testing, total number of batches is: %d" % total_num_batches)
 
         for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
             x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
@@ -345,7 +345,7 @@ def main():
                         print("Validation accuracy reached the threashold. Breaking")
                         break
                     if epoch_number%10 == 0:
-                        path = saver.save(session,"params_at_epoch.ckpt",global_step=epoch_number )
+                        path = saver.save(session,"params_at_epoch.ckpt", global_step=epoch_number )
                         print("Saved parameters to %s" %path)
 
         except KeyboardInterrupt:
