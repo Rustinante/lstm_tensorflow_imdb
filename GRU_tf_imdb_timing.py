@@ -100,7 +100,8 @@ class LSTM_Model(object):
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
             unrolled_inputs=tf.reshape(self._inputs,[1,-1])
-            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+            with tf.device("/cpu:0"):
+                embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
             embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
 
             # softmax weights and bias
