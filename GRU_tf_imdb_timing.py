@@ -80,8 +80,8 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-
-        self._inputs = tf.placeholder(tf.int64,[config.MAXLEN,BATCH_SIZE],name='embedded_inputs')
+        with tf.device("/cpu:0"):
+            self._inputs = tf.placeholder(tf.int64,[config.MAXLEN,BATCH_SIZE],name='embedded_inputs')
         self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
         self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
@@ -98,12 +98,10 @@ class LSTM_Model(object):
             with tf.device("/cpu:0"):
                 word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
                                               initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
-
-            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
-            with tf.device("/cpu:0"):
+                unrolled_inputs=tf.reshape(self._inputs,[1,-1])
                 embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
-            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
 
+            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
             # softmax weights and bias
             #np.random.seed(123)
             softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
