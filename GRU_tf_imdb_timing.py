@@ -144,7 +144,7 @@ class LSTM_Model(object):
 
         pool_mean = tf.div(self.h_outputs, tiled_num_words_in_each_sentence)
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
-        poo_mean = tf.nn.dropout(pool_mean, 0.5)
+        #poo_mean = tf.nn.dropout(pool_mean, 0.5)
         offset = 1e-8
         softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
         self.predictions = tf.argmax(softmax_probabilities, dimension=1)
