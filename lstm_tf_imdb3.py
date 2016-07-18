@@ -294,7 +294,7 @@ def main():
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
-    with session.as_default():
+    with session.as_default(),tf.device("/cpu:0"):
         with tf.variable_scope("model"):
             m = LSTM_Model(mode='train')
             m_validation = LSTM_Model(mode='validation')
