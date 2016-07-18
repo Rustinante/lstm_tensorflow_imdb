@@ -163,8 +163,8 @@ class LSTM_Model(object):
                                           initializer=tf.constant_initializer(lstm_U))
             lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
-        self.h = tf.zeros([BATCH_SIZE, dim_proj],dtype=np.float32)
-        self.c = tf.zeros([BATCH_SIZE, dim_proj],dtype=np.float32)
+        self.h = tf.zeros([self.num_samples, dim_proj],dtype=np.float32)
+        self.c = tf.zeros([self.num_samples, dim_proj],dtype=np.float32)
         self.h_outputs = []
 
         for t in range(config.MAXLEN):
