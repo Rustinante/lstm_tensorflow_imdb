@@ -156,12 +156,12 @@ class LSTM_Model(object):
         offset = 1e-8
         with tf.device("/gpu:0"):
             softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
-            self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-            self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
-            print("Constructing graphs for cross entropy")
-            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
-            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
-            print("Finished constructing the graph")
+        self.predictions = tf.argmax(softmax_probabilities, dimension=1)
+        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+        print("Constructing graphs for cross entropy")
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
+        self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+        print("Finished constructing the graph")
 
 
     def _slice(self, x, n, dim):
@@ -311,7 +311,7 @@ def main():
     del new_test_features, new_test_labels
 
 
-    session = tf.Session()
+    session = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
     with session.as_default(), tf.device("/cpu:0"):
         with tf.variable_scope("model"):
