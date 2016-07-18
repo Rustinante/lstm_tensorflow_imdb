@@ -88,29 +88,34 @@ class LSTM_Model(object):
                 self.train_features = tf.placeholder(tf.int32, [None, None], name='train_features')
                 self.train_labels = tf.placeholder(tf.float32, [None, 2], name='train_targets')
                 self.train_mask = tf.placeholder(tf.float32, [None, None], name='train_mask')
-                self.num_samples = tf.shape(self._inputs)[0]
+
                 self._inputs= tf.get_variable("inputs",initializer=self.train_features)
                 self._targets = tf.get_variable("targets",initializer=self.train_labels)
                 self._mask = tf.get_variable("mask",initializer=self.train_mask)
+                self.num_samples = tf.shape(self._inputs)[0]
+
         elif mode =='validation':
             with tf.variable_scope("validation"):
-                self._inputs = tf.placeholder(tf.int32, [None, None], name='validation_features')
-                self._targets = tf.placeholder(tf.float32, [None, 2], name='validation_targets')
-                self._mask = tf.placeholder(tf.float32, [None, None], name='validation_mask')
-                self.num_samples = tf.shape(self._inputs)[0]
+                self.validation_features = tf.placeholder(tf.int32, [None, None], name='validation_features')
+                self.validation_labels = tf.placeholder(tf.float32, [None, 2], name='validation_targets')
+                self.validation_mask = tf.placeholder(tf.float32, [None, None], name='validation_mask')
+
                 self._inputs = tf.get_variable("inputs", initializer=self.validation_features)
                 self._targets = tf.get_variable("targets", initializer=self.validation_labels)
                 self._mask = tf.get_variable("mask", initializer=self.validation_mask)
+                self.num_samples = tf.shape(self._inputs)[0]
 
         elif mode == 'test':
             with tf.variable_scope("validation"):
-                self._inputs = tf.placeholder(tf.int32, [None, None], name='test_features')
-                self._targets = tf.placeholder(tf.float32, [None, 2], name='test_targets')
-                self._mask = tf.placeholder(tf.float32, [None, None], name='test_mask')
-                self.num_samples = tf.shape(self._inputs)[0]
+                self.test_features = tf.placeholder(tf.int32, [None, None], name='test_features')
+                self.test_labels = tf.placeholder(tf.float32, [None, 2], name='test_targets')
+                self.test_mask = tf.placeholder(tf.float32, [None, None], name='test_mask')
+
                 self._inputs = tf.get_variable("inputs", initializer=self.test_features)
                 self._targets = tf.get_variable("targets", initializer=self.test_labels)
                 self._mask = tf.get_variable("mask", initializer=self.test_mask)
+                self.num_samples = tf.shape(self._inputs)[0]
+
         else:
             raise ValueError("mode must be one of train, validation, test")
 
