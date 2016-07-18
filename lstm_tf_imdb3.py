@@ -126,6 +126,8 @@ class LSTM_Model(object):
             return u.astype(np.float32)
 
         with tf.variable_scope("RNN") as self.RNN_name_scope:
+            if mode != 'train':
+                tf.get_variable_scope().reuse_variables()
             # initialize a word_embedding scheme out of random
             #np.random.seed(123)
             random_embedding = 0.01 * np.random.rand(10000, dim_proj)
@@ -295,7 +297,6 @@ def main():
     with session.as_default():
         with tf.variable_scope("model"):
             m = LSTM_Model(mode='train')
-        with tf.variable_scope("model", reuse=True):
             m_validation = LSTM_Model(mode='validation')
             m_test = LSTM_Model(mode='test')
 
