@@ -82,10 +82,10 @@ class LSTM_Model(object):
         self.size = config.hidden_size
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
-        with tf.device("/cpu:0"):
-            self._inputs = tf.placeholder(tf.int32,[config.MAXLEN,BATCH_SIZE],name='embedded_inputs')
-            self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
-            self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
+
+        self._inputs = tf.placeholder(tf.int32,[config.MAXLEN,BATCH_SIZE],name='embedded_inputs')
+        self._targets = tf.placeholder(tf.float32, [None, 2],name='targets')
+        self._mask = tf.placeholder(tf.float32, [None, None],name='mask')
 
         def ortho_weight(ndim):
             #np.random.seed(123)
@@ -96,39 +96,40 @@ class LSTM_Model(object):
         with tf.variable_scope("RNN") as self.RNN_name_scope:
             # initialize a word_embedding scheme out of random
             #np.random.seed(123)
-            with tf.device("/cpu:0"):
-                random_embedding = 0.01 * np.random.rand(10000, dim_proj)
-                word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
-                                                  initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
 
-                unrolled_inputs=tf.reshape(self._inputs,[1,-1])
-                embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
-                embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
+            random_embedding = 0.01 * np.random.rand(10000, dim_proj)
+            word_embedding = tf.get_variable('word_embedding', shape=[config.VOCABULARY_SIZE, dim_proj],
+                                              initializer=tf.constant_initializer(random_embedding),dtype=tf.float32)
+
+            unrolled_inputs=tf.reshape(self._inputs,[1,-1])
+            embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
+            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, BATCH_SIZE, dim_proj])
 
             # softmax weights and bias
             #np.random.seed(123)
-            softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
-            softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
-                                             initializer=tf.constant_initializer(softmax_w))
-            softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
-                                             initializer=tf.constant_initializer(0, tf.float32))
-            # cell weights and bias
-            lstm_W = np.concatenate([ortho_weight(dim_proj),
-                                     ortho_weight(dim_proj),
-                                     ortho_weight(dim_proj),
-                                     ortho_weight(dim_proj)], axis=1)
+            with tf.device("/gpu:0"):
+                softmax_w = 0.01 * np.random.randn(dim_proj, 2).astype(np.float32)
+                softmax_w = tf.get_variable("softmax_w", [dim_proj, 2], dtype=tf.float32,
+                                                 initializer=tf.constant_initializer(softmax_w))
+                softmax_b = tf.get_variable("softmax_b", [2], dtype=tf.float32,
+                                                 initializer=tf.constant_initializer(0, tf.float32))
+                # cell weights and bias
+                lstm_W = np.concatenate([ortho_weight(dim_proj),
+                                         ortho_weight(dim_proj),
+                                         ortho_weight(dim_proj),
+                                         ortho_weight(dim_proj)], axis=1)
 
-            lstm_U = np.concatenate([ortho_weight(dim_proj),
-                                     ortho_weight(dim_proj),
-                                     ortho_weight(dim_proj),
-                                     ortho_weight(dim_proj)], axis=1)
-            lstm_b = np.zeros((4 * 128,))
+                lstm_U = np.concatenate([ortho_weight(dim_proj),
+                                         ortho_weight(dim_proj),
+                                         ortho_weight(dim_proj),
+                                         ortho_weight(dim_proj)], axis=1)
+                lstm_b = np.zeros((4 * 128,))
 
-            lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
-                                          initializer=tf.constant_initializer(lstm_W))
-            lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
-                                          initializer=tf.constant_initializer(lstm_U))
-            lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
+                lstm_W = tf.get_variable("lstm_W", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+                                              initializer=tf.constant_initializer(lstm_W))
+                lstm_U = tf.get_variable("lstm_U", shape=[dim_proj, dim_proj * 4],dtype=tf.float32,
+                                              initializer=tf.constant_initializer(lstm_U))
+                lstm_b = tf.get_variable("lstm_b", shape=[dim_proj * 4], dtype=tf.float32, initializer=tf.constant_initializer(lstm_b))
 
         n_samples = BATCH_SIZE
         self.h = np.zeros([n_samples, dim_proj],dtype=np.float32)
@@ -307,9 +308,10 @@ def main():
     test_data=(new_test_features,new_test_labels)
     del new_test_features, new_test_labels
 
+
     session = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
-    with session.as_default():
+    with session.as_default(), tf.device("/cpu:0"):
         with tf.variable_scope("model"):
             m = LSTM_Model()
         with tf.variable_scope("model", reuse=True):
