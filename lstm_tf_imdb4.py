@@ -307,8 +307,7 @@ def main():
     test_data=(new_test_features,new_test_labels)
     del new_test_features, new_test_labels
 
-    GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
-    session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
+    session = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
     with session.as_default():
         with tf.variable_scope("model"):
