@@ -42,7 +42,7 @@ def prepare_data(seqs, labels, MAXLEN_to_pad_to, maxlen=None):
 
     n_samples = len(seqs)
     # columns are the samples in R^maxlen
-    x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int64)
+    x = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.int32)
     x_mask = np.zeros((MAXLEN_to_pad_to, n_samples)).astype(np.float32)
     for idx, s in enumerate(seqs):
         x[:lengths[idx], idx] = s

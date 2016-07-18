@@ -85,21 +85,21 @@ class LSTM_Model(object):
 
         if mode =='train':
             with tf.variable_scope("train"):
-                self._inputs = tf.placeholder(tf.int64, [None, None], name='train_featuers')
+                self._inputs = tf.placeholder(tf.int32, [None, None], name='train_features')
                 self._targets = tf.placeholder(tf.float32, [None, 2], name='train_targets')
                 self._mask = tf.placeholder(tf.float32, [None, None], name='train_mask')
                 self.num_samples = tf.shape(self._inputs)[0]
 
         elif mode =='validation':
             with tf.variable_scope("validation"):
-                self._inputs = tf.placeholder(tf.int64, [None, None], name='validation_featuers')
+                self._inputs = tf.placeholder(tf.int32, [None, None], name='validation_features')
                 self._targets = tf.placeholder(tf.float32, [None, 2], name='validation_targets')
                 self._mask = tf.placeholder(tf.float32, [None, None], name='validation_mask')
                 self.num_samples = tf.shape(self._inputs)[0]
 
         elif mode == 'test':
             with tf.variable_scope("validation"):
-                self._inputs = tf.placeholder(tf.int64, [None, None], name='test_featuers')
+                self._inputs = tf.placeholder(tf.int32, [None, None], name='test_features')
                 self._targets = tf.placeholder(tf.float32, [None, 2], name='test_targets')
                 self._mask = tf.placeholder(tf.float32, [None, None], name='test_mask')
                 self.num_samples = tf.shape(self._inputs)[0]
