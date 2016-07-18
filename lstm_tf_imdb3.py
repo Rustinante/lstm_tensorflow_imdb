@@ -191,6 +191,7 @@ class LSTM_Model(object):
         if mode == 'training':
             print("Trainable variables: ", tf.trainable_variables())
         self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+        print("Trainable variables: ", tf.trainable_variables())
         print("Finished constructing the graph")
 
 
