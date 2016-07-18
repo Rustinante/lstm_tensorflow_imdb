@@ -177,7 +177,7 @@ class LSTM_Model(object):
         self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
         if mode == 'training':
             print("Trainable variables: ", tf.trainable_variables())
-            self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
+        self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
         print("Finished constructing the graph")
 
 
@@ -318,7 +318,7 @@ def main():
                     print("\nTesting")
                     flags.testing_epoch = True
                     config.MAXLEN = config.max_sentence_length_for_testing
-                    testing_accuracy = run_epoch(session, m_test, mode='testing')
+                    testing_accuracy = run_epoch(session, m_test, mode='test')
                     config.MAXLEN =config.NUM_UNROLLS
                     print("Testing accuracy is: %.4f" % testing_accuracy)
                     if validation_accuracy > ACCURACY_THREASHOLD:
