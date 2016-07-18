@@ -311,7 +311,7 @@ def main():
     del new_test_features, new_test_labels
 
 
-    session = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+    session = tf.Session()
 
     with session.as_default(), tf.device("/cpu:0"):
         with tf.variable_scope("model"):
