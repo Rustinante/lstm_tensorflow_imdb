@@ -176,18 +176,18 @@ class LSTM_Model(object):
         with tf.device("/gpu:0"):
             preactivation = tf.matmul(h_previous, lstm_U) + tf.matmul(input,lstm_W) + lstm_b
 
-            input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
-            forget_valve = tf.sigmoid(self._slice(preactivation, 1, dim_proj))
-            output_valve = tf.sigmoid(self._slice(preactivation, 2, dim_proj))
-            input_pressure = tf.tanh(self._slice(preactivation, 3, dim_proj))
+        input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
+        forget_valve = tf.sigmoid(self._slice(preactivation, 1, dim_proj))
+        output_valve = tf.sigmoid(self._slice(preactivation, 2, dim_proj))
+        input_pressure = tf.tanh(self._slice(preactivation, 3, dim_proj))
 
-            cell_state = forget_valve * cell_previous + input_valve * input_pressure
-            cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
-                tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
+        cell_state = forget_valve * cell_previous + input_valve * input_pressure
+        cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
+            tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
 
-            h = output_valve * tf.tanh(cell_state)
-            h = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * h + tf.tile(tf.reshape((1. - mask), [-1, 1]),
-                                                                                [1, dim_proj]) * h_previous
+        h = output_valve * tf.tanh(cell_state)
+        h = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * h + tf.tile(tf.reshape((1. - mask), [-1, 1]),
+                                                                            [1, dim_proj]) * h_previous
         return h, cell_state
 
     def assign_lr(self, session, lr_value):
