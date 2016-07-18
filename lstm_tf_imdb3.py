@@ -84,7 +84,7 @@ class LSTM_Model(object):
         self._lr = tf.Variable(config.learning_rate, trainable=False)
 
         if mode == 'train':
-            with tf.variable_scope("train"):
+            with tf.variable_scope("train"), tf.device("/cpu:0"):
                 self.train_features = tf.placeholder(tf.int32, [None, None], name='train_features')
                 self.train_labels = tf.placeholder(tf.float32, [None, 2], name='train_targets')
                 self.train_mask = tf.placeholder(tf.float32, [None, None], name='train_mask')
@@ -95,7 +95,7 @@ class LSTM_Model(object):
                 self.num_samples = tf.shape(self._inputs)[1]
 
         elif mode == 'validation':
-            with tf.variable_scope("validation"):
+            with tf.variable_scope("validation"), tf.device("/cpu:0"):
                 self.validation_features = tf.placeholder(tf.int32, [None, None], name='validation_features')
                 self.validation_labels = tf.placeholder(tf.float32, [None, 2], name='validation_targets')
                 self.validation_mask = tf.placeholder(tf.float32, [None, None], name='validation_mask')
@@ -106,7 +106,7 @@ class LSTM_Model(object):
                 self.num_samples = tf.shape(self._inputs)[1]
 
         elif mode == 'test':
-            with tf.variable_scope("test"):
+            with tf.variable_scope("test"), tf.device("/cpu:0"):
                 self.test_features = tf.placeholder(tf.int32, [None, None], name='test_features')
                 self.test_labels = tf.placeholder(tf.float32, [None, 2], name='test_targets')
                 self.test_mask = tf.placeholder(tf.float32, [None, None], name='test_mask')
@@ -294,7 +294,7 @@ def main():
     GPU_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.90)
     session = tf.Session(config=tf.ConfigProto(gpu_options=GPU_options))
 
-    with session.as_default(),tf.device("/cpu:0"):
+    with session.as_default():
         with tf.variable_scope("model"):
             m = LSTM_Model(mode='train')
             m_validation = LSTM_Model(mode='validation')
