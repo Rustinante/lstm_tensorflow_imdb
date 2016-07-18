@@ -88,19 +88,21 @@ class LSTM_Model(object):
                 self._inputs = tf.placeholder(tf.int64, [None, None], name='train_featuers')
                 self._targets = tf.placeholder(tf.float32, [None, 2], name='train_targets')
                 self._mask = tf.placeholder(tf.float32, [None, None], name='train_mask')
+                self.num_samples = tf.shape(self._inputs)[0]
 
         elif mode =='validation':
             with tf.variable_scope("validation"):
                 self._inputs = tf.placeholder(tf.int64, [None, None], name='validation_featuers')
                 self._targets = tf.placeholder(tf.float32, [None, 2], name='validation_targets')
                 self._mask = tf.placeholder(tf.float32, [None, None], name='validation_mask')
+                self.num_samples = tf.shape(self._inputs)[0]
 
-        elif mode == 'validation':
+        elif mode == 'test':
             with tf.variable_scope("validation"):
                 self._inputs = tf.placeholder(tf.int64, [None, None], name='test_featuers')
                 self._targets = tf.placeholder(tf.float32, [None, 2], name='test_targets')
                 self._mask = tf.placeholder(tf.float32, [None, None], name='test_mask')
-
+                self.num_samples = tf.shape(self._inputs)[0]
         else:
             raise ValueError("mode must be one of train, validation, test")
 
@@ -119,7 +121,7 @@ class LSTM_Model(object):
 
             unrolled_inputs=tf.reshape(self._inputs,[1,-1])
             embedded_inputs = tf.nn.embedding_lookup(word_embedding, unrolled_inputs)
-            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, tf.shape(self._inputs)[0], dim_proj])
+            embedded_inputs = tf.reshape(embedded_inputs, [config.MAXLEN, self.num_samples , dim_proj])
 
             # softmax weights and bias
             #np.random.seed(123)
@@ -216,41 +218,19 @@ class LSTM_Model(object):
 
 
 
-def run_epoch(session, m, data, mode, verbose=True):
+def run_epoch(session, m, mode):
 
     total_cost = 0.0
     num_samples_seen= 0
     total_num_correct_predictions= 0
-    list_of_training_index_list = get_random_minibatches_index(len(data[0]), BATCH_SIZE)
-    total_num_batches = len(data[0]) // BATCH_SIZE
-    total_num_reviews = len(data[0])
-    #x      = [data[0][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    #labels = [data[1][BATCH_SIZE * i : BATCH_SIZE * (i+1)] for i in range(total_num_batches)]
-    x=[]
-    labels=[]
-    for l in list_of_training_index_list:
-        x.append([data[0][i] for i in l])
-        labels.append([data[1][i] for i in l])
 
     if mode == 'training':
         if flags.first_training_epoch:
             flags.first_training_epoch= False
-            print("For training, total number of reviews is: %d" % total_num_reviews)
-            print("For training, total number of batches is: %d" % total_num_batches)
 
-        for mini_batch_number, (_x, _y) in enumerate(zip(x,labels)):
-            #print("mini batch: %d" %mini_batch_number)
-            # x_mini and mask both have the shape of ( config.MAXLEN x BATCH_SIZE )
+        num_correct_predictions,num_samples, _ = session.run([m.num_correct_predictions,m.num_samples, m.train_op])
 
-            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to = config.MAXLEN)
-            num_samples_seen += x_mini.shape[1]
-            num_correct_predictions, _ = session.run([m.num_correct_predictions, m.train_op],
-                                                     feed_dict={m._inputs: x_mini,
-                                                                m._targets: labels_mini,
-                                                                m._mask: mask})
-            total_num_correct_predictions+= num_correct_predictions
-
-        avg_accuracy = total_num_correct_predictions/num_samples_seen
+        avg_accuracy = num_correct_predictions/num_samples
         print("Traversed through %d samples." %num_samples_seen)
         return np.asscalar(avg_accuracy)
 
@@ -258,19 +238,10 @@ def run_epoch(session, m, data, mode, verbose=True):
         if flags.first_validation_epoch or flags.testing_epoch:
             flags.first_validation_epoch= False
             flags.testing_epoch= False
-            print("For validation/testing, total number of reviews is: %d" % total_num_reviews)
-            print("For validation/testing, total number of batches is: %d" % total_num_batches)
 
-        for mini_batch_number, (_x, _y) in enumerate(zip(x, labels)):
-            x_mini, mask, labels_mini = prepare_data(_x, _y, MAXLEN_to_pad_to=config.MAXLEN)
-            num_samples_seen += x_mini.shape[1]
-            cost, num_correct_predictions = session.run([m.cost ,m.num_correct_predictions],
-                                                        feed_dict={m._inputs: x_mini,
-                                                                   m._targets: labels_mini,
-                                                                   m._mask: mask})
-            total_cost += cost
-            total_num_correct_predictions += num_correct_predictions
-        accuracy= total_num_correct_predictions/num_samples_seen
+        cost, num_correct_predictions,num_samples = session.run([m.cost ,m.num_correct_predictions,m.num_samples])
+
+        accuracy= num_correct_predictions/num_samples
         print("total cost is %.4f" %total_cost)
         return np.asscalar(accuracy)
 
@@ -316,15 +287,15 @@ def main():
 
         print("Initializing all variables")
         session.run(tf.initialize_all_variables(),feed_dict={
-            m.train_features:train_features,
-            m.train_targets:train_labels,
-            m.train_mask:train_mask,
-            m_validation.validation_features:validation_features,
-            m_validation.validation_targets:validation_labels,
-            m_validation.validation_mask:validation_mask,
-            m_test.test_features:test_features,
-            m_test.test_targets:test_labels,
-            m_test.test_mask:test_mask
+            m._inputs:train_features,
+            m._targets:train_labels,
+            m._mask:train_mask,
+            m_validation._inputs:validation_features,
+            m_validation._targets:validation_labels,
+            m_validation._mask:validation_mask,
+            m_test._inputs:test_features,
+            m_test._targets:test_labels,
+            m_test._mask:test_mask
         })
         print("Initialized all variables")
         saver = tf.train.Saver()
@@ -335,19 +306,19 @@ def main():
                 print("\nTraining")
                 m.assign_lr(session, config.learning_rate)
                 print("Epoch: %d Learning rate: %.5f" % (epoch_number, session.run(m.lr)))
-                average_training_accuracy = run_epoch(session, m, train_data, mode='training')
+                average_training_accuracy = run_epoch(session, m, mode='training')
                 print("Average training accuracy in epoch %d is: %.5f" %(epoch_number, average_training_accuracy))
                 if epoch_number==20:
                     print("total time is:",time.time()-start_time)
 
                 if epoch_number%5 == 0:
                     print("\nValidating")
-                    validation_accuracy = run_epoch(session, m, validation_data, mode='validation')
+                    validation_accuracy = run_epoch(session, m, mode='validation')
                     print("Validation accuracy in epoch %d is: %.5f\n" %(epoch_number, validation_accuracy))
                     print("\nTesting")
                     flags.testing_epoch = True
                     config.MAXLEN = config.max_sentence_length_for_testing
-                    testing_accuracy = run_epoch(session, m_test, test_data, mode='testing')
+                    testing_accuracy = run_epoch(session, m_test, mode='testing')
                     config.MAXLEN =config.NUM_UNROLLS
                     print("Testing accuracy is: %.4f" % testing_accuracy)
                     if validation_accuracy > ACCURACY_THREASHOLD:
