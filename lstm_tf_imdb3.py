@@ -92,7 +92,7 @@ class LSTM_Model(object):
                 self._inputs= tf.get_variable("inputs",initializer=self.train_features,validate_shape=False, trainable=False)
                 self._targets = tf.get_variable("targets",initializer=self.train_labels,validate_shape=False, trainable=False)
                 self._mask = tf.get_variable("mask",initializer=self.train_mask,validate_shape=False, trainable=False)
-                self.num_samples = tf.shape(self._inputs)[0]
+                self.num_samples = tf.shape(self._inputs)[1]
 
         elif mode == 'validation':
             with tf.variable_scope("validation"):
@@ -103,7 +103,7 @@ class LSTM_Model(object):
                 self._inputs = tf.get_variable("inputs", initializer=self.validation_features,validate_shape=False, trainable=False)
                 self._targets = tf.get_variable("targets", initializer=self.validation_labels,validate_shape=False, trainable=False)
                 self._mask = tf.get_variable("mask", initializer=self.validation_mask,validate_shape=False, trainable=False)
-                self.num_samples = tf.shape(self._inputs)[0]
+                self.num_samples = tf.shape(self._inputs)[1]
 
         elif mode == 'test':
             with tf.variable_scope("test"):
@@ -114,7 +114,7 @@ class LSTM_Model(object):
                 self._inputs = tf.get_variable("inputs", initializer=self.test_features,validate_shape=False, trainable=False)
                 self._targets = tf.get_variable("targets", initializer=self.test_labels,validate_shape=False, trainable=False)
                 self._mask = tf.get_variable("mask", initializer=self.test_mask,validate_shape=False, trainable=False)
-                self.num_samples = tf.shape(self._inputs)[0]
+                self.num_samples = tf.shape(self._inputs)[1]
 
         else:
             raise ValueError("mode must be one of train, validation, test")
