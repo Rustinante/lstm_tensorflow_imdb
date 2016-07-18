@@ -83,7 +83,7 @@ class LSTM_Model(object):
         # learning rate as a tf variable. Its value is therefore session dependent
         self._lr = tf.Variable(config.learning_rate, trainable=False)
 
-        if mode =='train':
+        if mode == 'train':
             with tf.variable_scope("train"):
                 self.train_features = tf.placeholder(tf.int32, [None, None], name='train_features')
                 self.train_labels = tf.placeholder(tf.float32, [None, 2], name='train_targets')
@@ -94,7 +94,7 @@ class LSTM_Model(object):
                 self._mask = tf.get_variable("mask",initializer=self.train_mask,validate_shape=False, trainable=False)
                 self.num_samples = tf.shape(self._inputs)[0]
 
-        elif mode =='validation':
+        elif mode == 'validation':
             with tf.variable_scope("validation"):
                 self.validation_features = tf.placeholder(tf.int32, [None, None], name='validation_features')
                 self.validation_labels = tf.placeholder(tf.float32, [None, 2], name='validation_targets')
@@ -106,7 +106,7 @@ class LSTM_Model(object):
                 self.num_samples = tf.shape(self._inputs)[0]
 
         elif mode == 'test':
-            with tf.variable_scope("validation"):
+            with tf.variable_scope("test"):
                 self.test_features = tf.placeholder(tf.int32, [None, None], name='test_features')
                 self.test_labels = tf.placeholder(tf.float32, [None, 2], name='test_targets')
                 self.test_mask = tf.placeholder(tf.float32, [None, None], name='test_mask')
