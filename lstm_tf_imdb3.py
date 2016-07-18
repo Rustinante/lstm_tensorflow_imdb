@@ -287,7 +287,7 @@ def main():
 
         print("Initializing all variables")
         session.run(tf.initialize_all_variables(),feed_dict={
-            m._inputs:train_features,
+            m._inputs:train_features.astype('int32'),
             m._targets:train_labels,
             m._mask:train_mask,
             m_validation._inputs:validation_features,
