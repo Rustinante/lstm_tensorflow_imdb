@@ -140,7 +140,7 @@ class LSTM_Model(object):
             mask_slice = tf.slice(self._mask, [t, 0], [1, -1])
             inputs_slice = tf.squeeze(tf.slice(embedded_inputs,[t,0,0],[1,-1,-1]))
             self.h, self.c = self.step(mask_slice,
-                                       tf.matmul(inputs_slice, lstm_W) + lstm_b,
+                                       inputs_slice,
                                        self.h,
                                        self.c)
             self.h_outputs.append(tf.expand_dims(self.h, -1))
@@ -154,15 +154,14 @@ class LSTM_Model(object):
         # self.h_outputs now has dim (num_steps * batch_size x dim_proj)
         poo_mean = tf.nn.dropout(pool_mean, 0.5)
         offset = 1e-8
-        softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
-        self.predictions = tf.argmax(softmax_probabilities, dimension=1)
-        self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
-        print("Constructing graphs for cross entropy")
-        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
-        if is_training:
-            print("Trainable variables: ", tf.trainable_variables())
+        with tf.device("/gpu:0"):
+            softmax_probabilities = tf.nn.softmax(tf.matmul(pool_mean, softmax_w) + softmax_b)
+            self.predictions = tf.argmax(softmax_probabilities, dimension=1)
+            self.num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(self.predictions, tf.argmax(self._targets, 1)), dtype=tf.float32))
+            print("Constructing graphs for cross entropy")
+            self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self._targets * tf.log(softmax_probabilities), reduction_indices=1))
             self._train_op = tf.train.AdamOptimizer(0.0001).minimize(self.cross_entropy)
-        print("Finished constructing the graph")
+            print("Finished constructing the graph")
 
 
     def _slice(self, x, n, dim):
@@ -171,21 +170,24 @@ class LSTM_Model(object):
     def step(self, mask, input, h_previous, cell_previous):
         with tf.variable_scope(self.RNN_name_scope, reuse=True):
             lstm_U = tf.get_variable("lstm_U")
-        preactivation = tf.matmul(h_previous, lstm_U)
-        preactivation = preactivation + input
+            lstm_W = tf.get_variable("lstm_W")
+            lstm_b = tf.get_variable("lstm_b")
 
-        input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
-        forget_valve = tf.sigmoid(self._slice(preactivation, 1, dim_proj))
-        output_valve = tf.sigmoid(self._slice(preactivation, 2, dim_proj))
-        input_pressure = tf.tanh(self._slice(preactivation, 3, dim_proj))
+        with tf.device("/gpu:0"):
+            preactivation = tf.matmul(h_previous, lstm_U) + tf.matmul(input,lstm_W) + lstm_b
 
-        cell_state = forget_valve * cell_previous + input_valve * input_pressure
-        cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
-            tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
+            input_valve = tf.sigmoid(self._slice(preactivation, 0, dim_proj))
+            forget_valve = tf.sigmoid(self._slice(preactivation, 1, dim_proj))
+            output_valve = tf.sigmoid(self._slice(preactivation, 2, dim_proj))
+            input_pressure = tf.tanh(self._slice(preactivation, 3, dim_proj))
 
-        h = output_valve * tf.tanh(cell_state)
-        h = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * h + tf.tile(tf.reshape((1. - mask), [-1, 1]),
-                                                                            [1, dim_proj]) * h_previous
+            cell_state = forget_valve * cell_previous + input_valve * input_pressure
+            cell_state = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * cell_state + tf.tile(
+                tf.reshape((1. - mask), [-1, 1]), [1, dim_proj]) * cell_previous
+
+            h = output_valve * tf.tanh(cell_state)
+            h = tf.tile(tf.reshape(mask, [-1, 1]), [1, dim_proj]) * h + tf.tile(tf.reshape((1. - mask), [-1, 1]),
+                                                                                [1, dim_proj]) * h_previous
         return h, cell_state
 
     def assign_lr(self, session, lr_value):
