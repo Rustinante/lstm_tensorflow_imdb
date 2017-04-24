@@ -4,3 +4,5 @@ and at http://deeplearning.net/tutorial/code/imdb.py
 
 Reference: LSTM Networks for Sentiment Analysis
 http://deeplearning.net/tutorial/lstm.html
+
+Tensorflow 0.9
